@@ -1,0 +1,47 @@
+# Virtual environment
+venv/
+.venv/
+env/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Jupyter
+.ipynb_checkpoints/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment / secrets
+.env
+.env.*
+*.pem
+*.key
+credentials.json
+secrets.json
+
+# Logs
+*.log
+
+# Generated datasets
+#data/train.csv
+#data/validation.csv
+#data/test.csv
+#data/tft_predictions.csv
+
+# Lightning / training logs
+lightning_logs/
+logs/
+
+# Optional generated files
+# data/tft_prediction_plot.png
+
+# Don't ignore the trained model
+# models/*.ckpt
