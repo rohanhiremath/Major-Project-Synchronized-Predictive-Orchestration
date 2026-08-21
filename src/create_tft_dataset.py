@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pandas as pd
 
 from pytorch_forecasting import TimeSeriesDataSet
@@ -7,7 +9,9 @@ from pytorch_forecasting import TimeSeriesDataSet
 # 1. LOAD PROCESSED DATA
 # ============================================================
 
-DATA_FILE = "data/processed_ptcs.csv"
+# Resolve paths from this script so it works from either `src/` or the project root.
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+DATA_FILE = PROJECT_ROOT / "data" / "processed_server_telemetry.csv"
 
 df = pd.read_csv(DATA_FILE)
 
@@ -30,10 +34,10 @@ print(df.columns.tolist())
 # Your data arrives every 5 seconds.
 #
 # 24 observations × 5 seconds = 120 seconds = 2 minutes
-MAX_ENCODER_LENGTH = 24
+MAX_ENCODER_LENGTH = 30
 
 # 6 observations × 5 seconds = 30 seconds
-MAX_PREDICTION_LENGTH = 6
+MAX_PREDICTION_LENGTH = 30
 
 # Target we want to predict
 TARGET = "psi_some_avg10"
@@ -54,7 +58,7 @@ tft_dataset = TimeSeriesDataSet(
     target=TARGET,
 
     # Treat each continuous segment as a separate series
-    group_ids=["segment_id"],
+    group_ids=["series_id"],
 
     # How much historical information TFT sees
     max_encoder_length=MAX_ENCODER_LENGTH,
@@ -65,14 +69,20 @@ tft_dataset = TimeSeriesDataSet(
     # Variables whose future values are known
     time_varying_known_reals=[
         "time_idx",
+        "hour_sin",
+        "hour_cos",
     ],
 
     # Variables whose future values are unknown
     time_varying_unknown_reals=[
+        "request_rate",
+        "active_connections",
         "cpu_usage",
         "memory_usage",
         "read_bytes_per_sec",
         "write_bytes_per_sec",
+        "latency_ms",
+        "error_rate",
 
         "psi_some_avg10",
         "psi_some_avg60",

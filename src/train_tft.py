@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pandas as pd
 import torch
 
@@ -7,24 +9,26 @@ from pytorch_forecasting import (
 )
 from pytorch_forecasting.metrics import QuantileLoss
 
-from lightning.pytorch import Trainer
-from lightning.pytorch.callbacks import EarlyStopping, ModelCheckpoint
 
 
 # ============================================================
 # CONFIGURATION
 # ============================================================
 
-TRAIN_FILE = "data/train.csv"
-VAL_FILE = "data/validation.csv"
-TEST_FILE = "data/test.csv"
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+DATA_DIR = PROJECT_ROOT / "data"
+MODEL_DIR = PROJECT_ROOT / "models"
 
-MODEL_FILE = "models/tft_psi_model.ckpt"
+TRAIN_FILE = DATA_DIR / "train.csv"
+VAL_FILE = DATA_DIR / "validation.csv"
+TEST_FILE = DATA_DIR / "test.csv"
+
+MODEL_FILE = MODEL_DIR / "tft_psi_model.ckpt"
 
 TARGET = "psi_some_avg10"
 
-MAX_ENCODER_LENGTH = 24
-MAX_PREDICTION_LENGTH = 6
+MAX_ENCODER_LENGTH = 30  # 10 minutes of 20-second history
+MAX_PREDICTION_LENGTH = 30  # 10-minute forecast horizon
 
 BATCH_SIZE = 16
 
@@ -35,7 +39,8 @@ DROPOUT = 0.1
 
 LEARNING_RATE = 0.001
 
-MAX_EPOCHS = 20
+MAX_EPOCHS = 3
+EARLY_STOPPING_PATIENCE = 3
 
 
 # ============================================================
@@ -88,7 +93,7 @@ training_dataset = TimeSeriesDataSet(
 
     target=TARGET,
 
-    group_ids=["segment_id"],
+    group_ids=["series_id"],
 
     max_encoder_length=MAX_ENCODER_LENGTH,
 
@@ -96,13 +101,19 @@ training_dataset = TimeSeriesDataSet(
 
     time_varying_known_reals=[
         "time_idx",
+        "hour_sin",
+        "hour_cos",
     ],
 
     time_varying_unknown_reals=[
+        "request_rate",
+        "active_connections",
         "cpu_usage",
         "memory_usage",
         "read_bytes_per_sec",
         "write_bytes_per_sec",
+        "latency_ms",
+        "error_rate",
 
         "psi_some_avg10",
         "psi_some_avg60",
@@ -125,7 +136,7 @@ train_val_df = pd.concat(
 )
 
 train_val_df = train_val_df.sort_values(
-    ["segment_id", "time_idx"]
+    ["series_id", "time_idx"]
 ).reset_index(drop=True)
 
 
@@ -185,9 +196,9 @@ tft = TemporalFusionTransformer.from_dataset(
 
     hidden_continuous_size=HIDDEN_SIZE,
 
-    output_size=7,
+    output_size=3,
 
-    loss=QuantileLoss(),
+    loss=QuantileLoss(quantiles=[0.1, 0.5, 0.9]),
 
     log_interval=10,
 
@@ -211,81 +222,85 @@ print(
 # 7. CALLBACKS
 # ============================================================
 
-early_stop_callback = EarlyStopping(
-
-    monitor="val_loss",
-
-    min_delta=0.001,
-
-    patience=5,
-
-    mode="min",
-)
-
-
-checkpoint_callback = ModelCheckpoint(
-
-    dirpath="models",
-
-    filename="tft-psi-{epoch:02d}-{val_loss:.4f}",
-
-    monitor="val_loss",
-
-    mode="min",
-
-    save_top_k=1,
-)
-
-
 # ============================================================
-# 8. CREATE TRAINER
-# ============================================================
-
-trainer = Trainer(
-
-    max_epochs=MAX_EPOCHS,
-
-    accelerator="cpu",
-
-    devices=1,
-
-    gradient_clip_val=0.1,
-
-    callbacks=[
-        early_stop_callback,
-        checkpoint_callback,
-    ],
-
-    enable_model_summary=True,
-
-    log_every_n_steps=1,
-
-)
-
-
-# ============================================================
-# 9. TRAIN
+# 8. TRAIN WITHOUT DISTRIBUTED RUNTIME
 # ============================================================
 
 print("\n" + "=" * 60)
 print("STARTING TFT TRAINING")
 print("=" * 60)
 
-trainer.fit(
+optimizer = torch.optim.Adam(tft.parameters(), lr=LEARNING_RATE)
+best_val_loss = float("inf")
+epochs_without_improvement = 0
 
-    tft,
+for epoch in range(1, MAX_EPOCHS + 1):
+    tft.train()
+    train_loss_total = 0.0
+    train_batches = 0
 
-    train_dataloaders=train_dataloader,
+    for x, y in train_dataloader:
+        optimizer.zero_grad()
+        output = tft(x)
+        loss = tft.loss(output["prediction"], y)
+        loss.backward()
+        torch.nn.utils.clip_grad_norm_(tft.parameters(), max_norm=0.1)
+        optimizer.step()
+        train_loss_total += float(loss.detach())
+        train_batches += 1
 
-    val_dataloaders=val_dataloader,
-)
+    tft.eval()
+    val_loss_total = 0.0
+    val_batches = 0
+    with torch.no_grad():
+        for x, y in val_dataloader:
+            output = tft(x)
+            val_loss_total += float(tft.loss(output["prediction"], y))
+            val_batches += 1
+
+    train_loss = train_loss_total / max(train_batches, 1)
+    val_loss = val_loss_total / max(val_batches, 1)
+    print(f"Epoch {epoch:02d}: train_loss={train_loss:.6f}, val_loss={val_loss:.6f}")
+
+    if val_loss < best_val_loss - 0.001:
+        best_val_loss = val_loss
+        epochs_without_improvement = 0
+        torch.save(
+            {
+                "state_dict": tft.state_dict(),
+                "hyper_parameters": dict(tft.hparams),
+                "pytorch-lightning_version": "2.6.5",
+                "__special_save__": {
+                    "loss": tft.loss,
+                    "logging_metrics": tft.logging_metrics,
+                },
+            },
+            MODEL_FILE,
+        )
+    else:
+        epochs_without_improvement += 1
+        if epochs_without_improvement >= EARLY_STOPPING_PATIENCE:
+            print("Early stopping triggered.")
+            break
 
 
 # ============================================================
-# 10. SAVE FINAL MODEL
+# 9. SAVE FINAL MODEL
 # ============================================================
 
-trainer.save_checkpoint(MODEL_FILE)
+if not MODEL_FILE.exists():
+    torch.save(
+        {
+            "state_dict": tft.state_dict(),
+            "hyper_parameters": dict(tft.hparams),
+            "pytorch-lightning_version": "2.6.5",
+            "__special_save__": {
+                "loss": tft.loss,
+                "logging_metrics": tft.logging_metrics,
+            },
+        },
+        MODEL_FILE,
+    )
 
 print("\n" + "=" * 60)
 print("TRAINING COMPLETE")

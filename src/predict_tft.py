@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pandas as pd
 import numpy as np
 import torch
@@ -11,16 +13,23 @@ from pytorch_forecasting import TemporalFusionTransformer
 # CONFIGURATION
 # ============================================================
 
-TRAIN_FILE = "data/train.csv"
-VAL_FILE = "data/validation.csv"
-TEST_FILE = "data/test.csv"
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+DATA_DIR = PROJECT_ROOT / "data"
+MODEL_DIR = PROJECT_ROOT / "models"
 
-MODEL_FILE = "models/tft_psi_model.ckpt"
+TRAIN_FILE = DATA_DIR / "train.csv"
+VAL_FILE = DATA_DIR / "validation.csv"
+TEST_FILE = DATA_DIR / "test.csv"
+
+MODEL_FILE = MODEL_DIR / "tft_psi_model.ckpt"
 
 TARGET = "psi_some_avg10"
 
-MAX_ENCODER_LENGTH = 24
-MAX_PREDICTION_LENGTH = 6
+MAX_ENCODER_LENGTH = 30
+MAX_PREDICTION_LENGTH = 30
+
+QUANTILES = (0.1, 0.5, 0.9)
+SPIKE_THRESHOLD = 2.0
 
 BATCH_SIZE = 16
 
@@ -59,7 +68,7 @@ training_dataset = TimeSeriesDataSet(
 
     target=TARGET,
 
-    group_ids=["segment_id"],
+    group_ids=["series_id"],
 
     max_encoder_length=MAX_ENCODER_LENGTH,
 
@@ -67,13 +76,19 @@ training_dataset = TimeSeriesDataSet(
 
     time_varying_known_reals=[
         "time_idx",
+        "hour_sin",
+        "hour_cos",
     ],
 
     time_varying_unknown_reals=[
+        "request_rate",
+        "active_connections",
         "cpu_usage",
         "memory_usage",
         "read_bytes_per_sec",
         "write_bytes_per_sec",
+        "latency_ms",
+        "error_rate",
 
         "psi_some_avg10",
         "psi_some_avg60",
@@ -109,7 +124,7 @@ all_test_data = pd.concat(
 )
 
 all_test_data = all_test_data.sort_values(
-    ["segment_id", "time_idx"]
+    ["series_id", "time_idx"]
 ).reset_index(drop=True)
 
 
@@ -123,7 +138,9 @@ test_dataset = TimeSeriesDataSet.from_dataset(
 
     all_test_data,
 
-    predict=True,
+    # Keep every rolling window so accuracy includes the whole held-out
+    # period, rather than only the final window for each server.
+    predict=False,
 
     stop_randomization=True,
 )
@@ -175,22 +192,34 @@ print("\n" + "=" * 60)
 print("MAKING PREDICTIONS")
 print("=" * 60)
 
-predictions = model.predict(
-    test_dataloader,
-    mode="prediction"
-)
+quantile_batches = []
+actual_batches = []
+TEST_START_IDX = int(train_df["time_idx"].max()) + 1
+
+# Run inference directly to keep prediction single-process and avoid MPI
+# initialization in environments where distributed networking is unavailable.
+with torch.no_grad():
+    for x, y in test_dataloader:
+        test_window = x["decoder_time_idx"][:, 0] >= TEST_START_IDX
+        if not test_window.any():
+            continue
+        output = model(x)
+        quantile_batches.append(model.to_quantiles(output)[test_window].cpu())
+        actual_batches.append(y[0][test_window].cpu())
+
+quantile_predictions = torch.cat(quantile_batches, dim=0).numpy()
+actual_values = torch.cat(actual_batches, dim=0).numpy()
+predictions = quantile_predictions[:, :, 1]
 
 
 print("Prediction shape:")
 print(predictions.shape)
+print("Quantiles:", QUANTILES)
 
 
 # ============================================================
 # 8. CONVERT PREDICTIONS TO NUMPY
 # ============================================================
-
-if torch.is_tensor(predictions):
-    predictions = predictions.detach().cpu().numpy()
 
 predictions = np.asarray(predictions)
 
@@ -201,26 +230,6 @@ print(predictions)
 # ============================================================
 # 9. GET ACTUAL VALUES
 # ============================================================
-
-actual_values = []
-
-for batch in test_dataloader:
-
-    x, y = batch
-
-    target = y[0]
-
-    if torch.is_tensor(target):
-        target = target.detach().cpu().numpy()
-
-    actual_values.append(target)
-
-
-actual_values = np.concatenate(
-    actual_values,
-    axis=0
-)
-
 
 print("\nActual shape:")
 print(actual_values.shape)
@@ -254,6 +263,31 @@ rmse = np.sqrt(
 )
 
 
+def pinball_loss(actual, predicted, quantile):
+    error = actual - predicted
+    return float(np.mean(np.maximum(quantile * error, (quantile - 1) * error)))
+
+
+q10 = quantile_predictions[:, :, 0]
+q50 = quantile_predictions[:, :, 1]
+q90 = quantile_predictions[:, :, 2]
+spike_actual = np.max(actual_values, axis=1) >= SPIKE_THRESHOLD
+scale_up_signal = np.max(q90, axis=1) >= SPIKE_THRESHOLD
+true_positive = np.sum(spike_actual & scale_up_signal)
+false_positive = np.sum(~spike_actual & scale_up_signal)
+false_negative = np.sum(spike_actual & ~scale_up_signal)
+coverage = np.mean((actual_values >= q10) & (actual_values <= q90))
+
+print("\nQuantile pinball loss:")
+for quantile, values in zip(QUANTILES, (q10, q50, q90)):
+    print(f"q{int(quantile * 100)}: {pinball_loss(actual_values, values, quantile):.6f}")
+print(f"q10-q90 coverage: {coverage:.3%}")
+print(f"Average q10-q90 interval width: {np.mean(q90 - q10):.6f}")
+print(f"Spike threshold: {SPIKE_THRESHOLD}")
+print(f"Spike precision: {true_positive / max(true_positive + false_positive, 1):.3%}")
+print(f"Spike recall: {true_positive / max(true_positive + false_negative, 1):.3%}")
+
+
 # ============================================================
 # 13. PRINT RESULTS
 # ============================================================
@@ -271,15 +305,16 @@ print(f"RMSE: {rmse:.6f}")
 # ============================================================
 
 results = pd.DataFrame({
-
+    "window_id": np.repeat(np.arange(len(actual_values)), MAX_PREDICTION_LENGTH),
+    "horizon_step": np.tile(np.arange(1, MAX_PREDICTION_LENGTH + 1), len(actual_values)),
     "actual_psi": actual_flat,
-
-    "predicted_psi": pred_flat,
-
+    "q10": q10.reshape(-1),
+    "q50": q50.reshape(-1),
+    "q90": q90.reshape(-1),
 })
 
 results.to_csv(
-    "data/tft_predictions.csv",
+    DATA_DIR / "tft_predictions.csv",
     index=False
 )
 
@@ -318,11 +353,11 @@ plt.grid(True)
 plt.tight_layout()
 
 plt.savefig(
-    "data/tft_prediction_plot.png",
+    DATA_DIR / "tft_prediction_plot.png",
     dpi=150
 )
 
-plt.show()
+plt.close()
 
 
 print("\nPlot saved to:")

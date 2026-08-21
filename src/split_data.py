@@ -1,10 +1,13 @@
+from pathlib import Path
+
 import pandas as pd
 
-INPUT_FILE = "data/processed_ptcs.csv"
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+INPUT_FILE = PROJECT_ROOT / "data" / "processed_server_telemetry.csv"
 
-TRAIN_FILE = "data/train.csv"
-VAL_FILE = "data/validation.csv"
-TEST_FILE = "data/test.csv"
+TRAIN_FILE = PROJECT_ROOT / "data" / "train.csv"
+VAL_FILE = PROJECT_ROOT / "data" / "validation.csv"
+TEST_FILE = PROJECT_ROOT / "data" / "test.csv"
 
 df = pd.read_csv(INPUT_FILE)
 
@@ -12,7 +15,7 @@ df["timestamp"] = pd.to_datetime(df["timestamp"])
 
 # Make sure data is sorted
 df = df.sort_values(
-    ["segment_id", "time_idx"]
+    ["series_id", "time_idx"]
 ).reset_index(drop=True)
 
 
@@ -24,7 +27,7 @@ train_parts = []
 val_parts = []
 test_parts = []
 
-for segment_id, segment in df.groupby("segment_id"):
+for series_id, segment in df.groupby("series_id"):
 
     n = len(segment)
 
@@ -41,7 +44,7 @@ for segment_id, segment in df.groupby("segment_id"):
     test_parts.append(test)
 
     print("=" * 60)
-    print(f"SEGMENT {segment_id}")
+    print(f"SERIES {series_id}")
     print("=" * 60)
 
     print(f"Total:      {len(segment)}")
