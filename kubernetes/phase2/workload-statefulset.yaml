@@ -1,0 +1,145 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: workload-app
+  namespace: default
+  labels:
+    app: workload
+    tier: application
+    version: v1
+spec:
+  serviceName: "workload-svc"
+  replicas: 3
+  selector:
+    matchLabels:
+      app: workload
+  template:
+    metadata:
+      labels:
+        app: workload
+        tier: application
+        version: v1
+      annotations:
+        # Model metadata - Updated with 94.65% recall
+        model.predictive-hpa.io/version: "improved-tft-psi"
+        model.predictive-hpa.io/recall: "94.65"
+        model.predictive-hpa.io/precision: "87.64"
+        model.predictive-hpa.io/f1: "91.01"
+        model.predictive-hpa.io/threshold: "1.5"
+        model.predictive-hpa.io/architecture: "tft-hidden64-heads4"
+        model.predictive-hpa.io/training-date: "2026-08-24"
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9100"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+      # Main application container
+      - name: app
+        image: nginx:1.25-alpine
+        ports:
+        - containerPort: 80
+          name: http
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 2000m
+            memory: 1Gi
+        volumeMounts:
+        - name: data-volume
+          mountPath: /data
+        - name: logs-volume
+          mountPath: /var/log/app
+        env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+      
+      # Node-exporter sidecar for PSI metrics
+      - name: node-exporter
+        image: prom/node-exporter:v1.6.1
+        args:
+        - --path.procfs=/host/proc
+        - --path.sysfs=/host/sys
+        - --path.rootfs=/host/root
+        - --collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)
+        - --collector.pressure
+        - --web.listen-address=:9100
+        ports:
+        - containerPort: 9100
+          name: metrics
+          protocol: TCP
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            cpu: 200m
+            memory: 128Mi
+        volumeMounts:
+        - name: proc
+          mountPath: /host/proc
+          readOnly: true
+        - name: sys
+          mountPath: /host/sys
+          readOnly: true
+        - name: root
+          mountPath: /host/root
+          readOnly: true
+          mountPropagation: HostToContainer
+        securityContext:
+          privileged: true
+          runAsUser: 0
+      
+      volumes:
+      - name: proc
+        hostPath:
+          path: /proc
+          type: Directory
+      - name: sys
+        hostPath:
+          path: /sys
+          type: Directory
+      - name: root
+        hostPath:
+          path: /
+          type: Directory
+      
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - workload
+              topologyKey: kubernetes.io/hostname
+  
+  volumeClaimTemplates:
+  - metadata:
+      name: data-volume
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 5Gi
+  - metadata:
+      name: logs-volume
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 2Gi
