@@ -1,0 +1,209 @@
+{
+  "dashboard": {
+    "title": "PSI Predictive HPA - Workload Monitoring",
+    "tags": ["psi", "predictive-hpa", "workload"],
+    "timezone": "browser",
+    "schemaVersion": 16,
+    "version": 0,
+    "refresh": "30s",
+    "panels": [
+      {
+        "id": 1,
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+        "type": "timeseries",
+        "title": "Memory PSI Full (Stalled)",
+        "targets": [
+          {
+            "expr": "rate(node_pressure_memory_stalled_seconds_total{pod=~\"workload-.*\"}[1m]) * 100",
+            "legendFormat": "{{ pod }}",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": 0, "color": "green"},
+                {"value": 1.5, "color": "yellow"},
+                {"value": 5, "color": "red"}
+              ]
+            }
+          }
+        },
+        "options": {
+          "legend": {"displayMode": "list", "placement": "bottom"}
+        }
+      },
+      {
+        "id": 2,
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+        "type": "timeseries",
+        "title": "CPU PSI (Stalled)",
+        "targets": [
+          {
+            "expr": "rate(node_pressure_cpu_stalled_seconds_total{pod=~\"workload-.*\"}[1m]) * 100",
+            "legendFormat": "{{ pod }}",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {"unit": "percent"}
+        }
+      },
+      {
+        "id": 3,
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+        "type": "timeseries",
+        "title": "I/O PSI (Stalled)",
+        "targets": [
+          {
+            "expr": "rate(node_pressure_io_stalled_seconds_total{pod=~\"workload-.*\"}[1m]) * 100",
+            "legendFormat": "{{ pod }}",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {"unit": "percent"}
+        }
+      },
+      {
+        "id": 4,
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
+        "type": "timeseries",
+        "title": "PSI Comparison (All Types)",
+        "targets": [
+          {
+            "expr": "rate(node_pressure_memory_stalled_seconds_total{pod=\"workload-app-0\"}[1m]) * 100",
+            "legendFormat": "Memory",
+            "refId": "A"
+          },
+          {
+            "expr": "rate(node_pressure_cpu_stalled_seconds_total{pod=\"workload-app-0\"}[1m]) * 100",
+            "legendFormat": "CPU",
+            "refId": "B"
+          },
+          {
+            "expr": "rate(node_pressure_io_stalled_seconds_total{pod=\"workload-app-0\"}[1m]) * 100",
+            "legendFormat": "I/O",
+            "refId": "C"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {"unit": "percent"}
+        }
+      },
+      {
+        "id": 5,
+        "gridPos": {"h": 4, "w": 6, "x": 0, "y": 16},
+        "type": "stat",
+        "title": "Spikes (Last Hour, >1.5%)",
+        "targets": [
+          {
+            "expr": "count_over_time((rate(node_pressure_memory_stalled_seconds_total{pod=~\"workload-.*\"}[1m]) * 100 > 1.5)[1h:20s])",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {"unit": "short"}
+        }
+      },
+      {
+        "id": 6,
+        "gridPos": {"h": 4, "w": 6, "x": 6, "y": 16},
+        "type": "stat",
+        "title": "Current Memory PSI",
+        "targets": [
+          {
+            "expr": "avg(rate(node_pressure_memory_stalled_seconds_total{pod=~\"workload-.*\"}[1m]) * 100)",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "decimals": 4,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": 0, "color": "green"},
+                {"value": 1.5, "color": "yellow"},
+                {"value": 5, "color": "red"}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 7,
+        "gridPos": {"h": 4, "w": 6, "x": 12, "y": 16},
+        "type": "stat",
+        "title": "Active Pods",
+        "targets": [
+          {
+            "expr": "count(up{pod=~\"workload-.*\"} == 1)",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {"unit": "short"}
+        }
+      },
+      {
+        "id": 8,
+        "gridPos": {"h": 4, "w": 6, "x": 18, "y": 16},
+        "type": "stat",
+        "title": "Model Threshold",
+        "targets": [
+          {
+            "expr": "1.5",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {"unit": "percent"}
+        },
+        "options": {
+          "text": {"titleSize": 12, "valueSize": 24}
+        }
+      },
+      {
+        "id": 9,
+        "gridPos": {"h": 6, "w": 12, "x": 0, "y": 20},
+        "type": "timeseries",
+        "title": "CPU Usage (App Container)",
+        "targets": [
+          {
+            "expr": "rate(container_cpu_usage_seconds_total{pod=~\"workload-.*\", container=\"app\"}[1m]) * 100",
+            "legendFormat": "{{ pod }}",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {"unit": "percent"}
+        }
+      },
+      {
+        "id": 10,
+        "gridPos": {"h": 6, "w": 12, "x": 12, "y": 20},
+        "type": "timeseries",
+        "title": "Memory Usage (App Container)",
+        "targets": [
+          {
+            "expr": "container_memory_usage_bytes{pod=~\"workload-.*\", container=\"app\"} / 1024 / 1024",
+            "legendFormat": "{{ pod }}",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {"unit": "MiB"}
+        }
+      }
+    ],
+    "templating": {"list": []},
+    "annotations": {"list": []},
+    "time": {"from": "now-1h", "to": "now"}
+  },
+  "overwrite": true
+}

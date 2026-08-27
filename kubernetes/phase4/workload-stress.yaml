@@ -1,0 +1,149 @@
+---
+# Memory Stress Job - Creates memory pressure spikes
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: stress-memory-burst
+  namespace: default
+  labels:
+    workload-type: stress
+    stress-target: memory
+spec:
+  completions: 1
+  parallelism: 1
+  template:
+    metadata:
+      labels:
+        workload-type: stress
+        stress-target: memory
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: stress
+        image: polinux/stress
+        command: ["/bin/sh"]
+        args:
+          - -c
+          - |
+            echo "Starting memory stress pattern generator..."
+            CYCLE=0
+            while [ $CYCLE -lt 10 ]; do
+              CYCLE=$((CYCLE+1))
+              echo "Cycle $CYCLE: Memory burst starting..."
+              
+              # Memory burst: allocate, touch, hold for 60s
+              stress --vm 2 --vm-bytes 400M --vm-hang 0 --timeout 60s --verbose
+              
+              echo "Cycle $CYCLE: Memory burst complete. Idle for 300s..."
+              sleep 300
+            done
+            echo "Memory stress pattern complete (10 cycles)"
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 2000m
+            memory: 1Gi
+      nodeSelector:
+        kubernetes.io/hostname: presync-control-plane
+
+---
+# CPU Stress Job - Creates CPU pressure
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: stress-cpu-burst
+  namespace: default
+  labels:
+    workload-type: stress
+    stress-target: cpu
+spec:
+  completions: 1
+  parallelism: 1
+  template:
+    metadata:
+      labels:
+        workload-type: stress
+        stress-target: cpu
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: stress
+        image: polinux/stress
+        command: ["/bin/sh"]
+        args:
+          - -c
+          - |
+            echo "Starting CPU stress pattern generator..."
+            CYCLE=0
+            while [ $CYCLE -lt 15 ]; do
+              CYCLE=$((CYCLE+1))
+              echo "Cycle $CYCLE: CPU burst starting..."
+              
+              # CPU burst: 2 workers for 45s
+              stress --cpu 2 --timeout 45s --verbose
+              
+              echo "Cycle $CYCLE: CPU burst complete. Idle for 200s..."
+              sleep 200
+            done
+            echo "CPU stress pattern complete (15 cycles)"
+        resources:
+          requests:
+            cpu: 100m
+            memory: 64Mi
+          limits:
+            cpu: 2000m
+            memory: 256Mi
+      nodeSelector:
+        kubernetes.io/hostname: presync-control-plane
+
+---
+# Combined Stress Job - Memory + CPU simultaneously
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: stress-combined-burst
+  namespace: default
+  labels:
+    workload-type: stress
+    stress-target: combined
+spec:
+  completions: 1
+  parallelism: 1
+  template:
+    metadata:
+      labels:
+        workload-type: stress
+        stress-target: combined
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: stress
+        image: polinux/stress
+        command: ["/bin/sh"]
+        args:
+          - -c
+          - |
+            echo "Starting combined stress pattern generator..."
+            CYCLE=0
+            while [ $CYCLE -lt 8 ]; do
+              CYCLE=$((CYCLE+1))
+              echo "Cycle $CYCLE: Combined burst starting..."
+              
+              # High intensity: CPU + Memory together for 90s
+              stress --cpu 2 --vm 2 --vm-bytes 450M --timeout 90s --verbose
+              
+              echo "Cycle $CYCLE: Combined burst complete. Idle for 400s..."
+              sleep 400
+            done
+            echo "Combined stress pattern complete (8 cycles)"
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 2000m
+            memory: 1Gi
+      nodeSelector:
+        kubernetes.io/hostname: presync-control-plane
