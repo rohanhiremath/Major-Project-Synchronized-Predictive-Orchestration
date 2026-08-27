@@ -1,0 +1,243 @@
+---
+# FIO I/O Stress - Sequential Write/Read Pattern
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: fio-sequential-burst
+  namespace: default
+  labels:
+    workload-type: fio
+    io-pattern: sequential
+spec:
+  completions: 3  # One per workload pod
+  parallelism: 3
+  template:
+    metadata:
+      labels:
+        workload-type: fio
+        io-pattern: sequential
+    spec:
+      restartPolicy: Never
+      affinity:
+        podAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - workload
+            topologyKey: kubernetes.io/hostname
+      containers:
+      - name: fio
+        image: ljishen/fio
+        command: ["/bin/sh"]
+        args:
+          - -c
+          - |
+            echo "FIO Sequential I/O stress pattern generator"
+            CYCLE=0
+            while [ $CYCLE -lt 12 ]; do
+              CYCLE=$((CYCLE+1))
+              echo "Cycle $CYCLE: Sequential write burst..."
+              
+              # Sequential write: 4KB blocks, 100MB
+              fio --name=seqwrite \
+                  --directory=/mnt/data \
+                  --rw=write \
+                  --bs=4k \
+                  --size=100M \
+                  --numjobs=1 \
+                  --time_based \
+                  --runtime=30s \
+                  --ioengine=sync \
+                  --direct=1 \
+                  --fsync=1
+              
+              echo "Cycle $CYCLE: Sequential read burst..."
+              
+              # Sequential read: 64KB blocks, 100MB
+              fio --name=seqread \
+                  --directory=/mnt/data \
+                  --rw=read \
+                  --bs=64k \
+                  --size=100M \
+                  --numjobs=1 \
+                  --time_based \
+                  --runtime=30s \
+                  --ioengine=sync \
+                  --direct=1
+              
+              echo "Cycle $CYCLE: I/O burst complete. Idle for 300s..."
+              sleep 300
+            done
+            echo "Sequential I/O pattern complete (12 cycles)"
+        resources:
+          requests:
+            cpu: 100m
+            memory: 64Mi
+          limits:
+            cpu: 1000m
+            memory: 256Mi
+        volumeMounts:
+        - name: data-storage
+          mountPath: /mnt/data
+      volumes:
+      - name: data-storage
+        persistentVolumeClaim:
+          claimName: data-volume-workload-app-0  # Will be different for each pod
+
+---
+# FIO Random I/O Stress - Random Read/Write Pattern
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: fio-random-burst
+  namespace: default
+  labels:
+    workload-type: fio
+    io-pattern: random
+spec:
+  completions: 3
+  parallelism: 3
+  template:
+    metadata:
+      labels:
+        workload-type: fio
+        io-pattern: random
+    spec:
+      restartPolicy: Never
+      affinity:
+        podAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - workload
+            topologyKey: kubernetes.io/hostname
+      containers:
+      - name: fio
+        image: ljishen/fio
+        command: ["/bin/sh"]
+        args:
+          - -c
+          - |
+            echo "FIO Random I/O stress pattern generator"
+            CYCLE=0
+            while [ $CYCLE -lt 10 ]; do
+              CYCLE=$((CYCLE+1))
+              echo "Cycle $CYCLE: Random I/O burst..."
+              
+              # Random read/write: 4KB blocks, 70% read / 30% write
+              fio --name=randmix \
+                  --directory=/mnt/data \
+                  --rw=randrw \
+                  --rwmixread=70 \
+                  --bs=4k \
+                  --size=200M \
+                  --numjobs=2 \
+                  --time_based \
+                  --runtime=60s \
+                  --ioengine=libaio \
+                  --iodepth=16 \
+                  --direct=1 \
+                  --fsync=8
+              
+              echo "Cycle $CYCLE: Random I/O burst complete. Idle for 240s..."
+              sleep 240
+            done
+            echo "Random I/O pattern complete (10 cycles)"
+        resources:
+          requests:
+            cpu: 100m
+            memory: 64Mi
+          limits:
+            cpu: 1000m
+            memory: 256Mi
+        volumeMounts:
+        - name: data-storage
+          mountPath: /mnt/data
+      volumes:
+      - name: data-storage
+        persistentVolumeClaim:
+          claimName: data-volume-workload-app-0
+
+---
+# FIO Heavy I/O Stress - High intensity bursts
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: fio-heavy-burst
+  namespace: default
+  labels:
+    workload-type: fio
+    io-pattern: heavy
+spec:
+  completions: 3
+  parallelism: 3
+  template:
+    metadata:
+      labels:
+        workload-type: fio
+        io-pattern: heavy
+    spec:
+      restartPolicy: Never
+      affinity:
+        podAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - workload
+            topologyKey: kubernetes.io/hostname
+      containers:
+      - name: fio
+        image: ljishen/fio
+        command: ["/bin/sh"]
+        args:
+          - -c
+          - |
+            echo "FIO Heavy I/O stress pattern generator"
+            CYCLE=0
+            while [ $CYCLE -lt 6 ]; do
+              CYCLE=$((CYCLE+1))
+              echo "Cycle $CYCLE: Heavy I/O burst..."
+              
+              # Heavy mixed I/O: Multiple jobs, high depth
+              fio --name=heavy \
+                  --directory=/mnt/data \
+                  --rw=randrw \
+                  --rwmixread=50 \
+                  --bs=4k,64k \
+                  --size=300M \
+                  --numjobs=4 \
+                  --time_based \
+                  --runtime=90s \
+                  --ioengine=libaio \
+                  --iodepth=32 \
+                  --direct=1 \
+                  --fsync=16 \
+                  --group_reporting
+              
+              echo "Cycle $CYCLE: Heavy I/O burst complete. Idle for 500s..."
+              sleep 500
+            done
+            echo "Heavy I/O pattern complete (6 cycles)"
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 1000m
+            memory: 512Mi
+        volumeMounts:
+        - name: data-storage
+          mountPath: /mnt/data
+      volumes:
+      - name: data-storage
+        persistentVolumeClaim:
+          claimName: data-volume-workload-app-0
