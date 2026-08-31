@@ -7,16 +7,34 @@ echo "Press Ctrl+C to stop"
 echo "============================================================"
 echo ""
 
-# Start port-forward
-echo "Starting Prometheus port-forward..."
-kubectl port-forward -n monitoring svc/kube-prometheus-stack-prometheus 9090:9090 > /dev/null 2>&1 &
-PF_PID=$!
-sleep 3
+# Check if port-forward is already running
+if ! curl -s http://localhost:9090/api/v1/status/config > /dev/null 2>&1; then
+    echo "Starting Prometheus port-forward..."
+    kubectl port-forward -n monitoring svc/kube-prometheus-stack-prometheus 9090:9090 > /dev/null 2>&1 &
+    PF_PID=$!
+    echo "Waiting for port-forward to be ready..."
+    sleep 5
+    
+    # Verify port-forward is working
+    if ! curl -s http://localhost:9090/api/v1/status/config > /dev/null 2>&1; then
+        echo "⚠ Port-forward failed to start. Trying again..."
+        kill $PF_PID 2>/dev/null || true
+        sleep 2
+        kubectl port-forward -n monitoring svc/kube-prometheus-stack-prometheus 9090:9090 > /dev/null 2>&1 &
+        PF_PID=$!
+        sleep 5
+    fi
+else
+    echo "✓ Prometheus already accessible on localhost:9090"
+    PF_PID=""
+fi
 
 cleanup() {
     echo ""
     echo "Stopping monitoring..."
-    kill $PF_PID 2>/dev/null || true
+    if [ -n "$PF_PID" ]; then
+        kill $PF_PID 2>/dev/null || true
+    fi
     exit 0
 }
 trap cleanup EXIT INT TERM
@@ -47,18 +65,22 @@ while true; do
     
     curl -s 'http://localhost:9090/api/v1/query?query=rate(node_pressure_memory_stalled_seconds_total{pod=~"workload-.*"}[1m])*100' 2>/dev/null | python3 << 'EOF'
 import json, sys
-data = json.load(sys.stdin)
-results = data.get('data', {}).get('result', [])
-if results:
-    for r in sorted(results, key=lambda x: x['metric']['pod']):
-        pod = r['metric']['pod']
-        value = float(r['value'][1])
-        bar_len = int(value * 5)  # Scale for display
-        bar = '█' * min(bar_len, 50)
-        status = '🔴 SPIKE' if value > 1.5 else '🟢 IDLE'
-        print(f'{pod:20} {value:6.2f}% {bar:50} {status}')
-else:
-    print('No data available yet')
+try:
+    data = json.load(sys.stdin)
+    results = data.get('data', {}).get('result', [])
+    if results:
+        for r in sorted(results, key=lambda x: x['metric']['pod']):
+            pod = r['metric']['pod']
+            value = float(r['value'][1])
+            bar_len = int(value * 5)  # Scale for display
+            bar = '█' * min(bar_len, 50)
+            status = '🔴 SPIKE' if value > 1.5 else '🟢 IDLE'
+            print(f'{pod:20} {value:6.2f}% {bar:50} {status}')
+    else:
+        print('No data available yet (wait for rate() window)')
+except Exception as e:
+    print(f'⚠ Query failed: {str(e)[:50]}')
+    print('Tip: Ensure port-forward is running or wait for data')
 EOF
     
     echo ""
@@ -70,18 +92,21 @@ EOF
     
     curl -s 'http://localhost:9090/api/v1/query?query=rate(node_pressure_cpu_stalled_seconds_total{pod=~"workload-.*"}[1m])*100' 2>/dev/null | python3 << 'EOF'
 import json, sys
-data = json.load(sys.stdin)
-results = data.get('data', {}).get('result', [])
-if results:
-    for r in sorted(results, key=lambda x: x['metric']['pod']):
-        pod = r['metric']['pod']
-        value = float(r['value'][1])
-        bar_len = int(value * 5)
-        bar = '█' * min(bar_len, 50)
-        status = '🔴 HIGH' if value > 2.0 else '🟢 NORM'
-        print(f'{pod:20} {value:6.2f}% {bar:50} {status}')
-else:
-    print('No data available yet')
+try:
+    data = json.load(sys.stdin)
+    results = data.get('data', {}).get('result', [])
+    if results:
+        for r in sorted(results, key=lambda x: x['metric']['pod']):
+            pod = r['metric']['pod']
+            value = float(r['value'][1])
+            bar_len = int(value * 5)
+            bar = '█' * min(bar_len, 50)
+            status = '🔴 HIGH' if value > 2.0 else '🟢 NORM'
+            print(f'{pod:20} {value:6.2f}% {bar:50} {status}')
+    else:
+        print('No data available yet')
+except:
+    print('⚠ Query failed or no data')
 EOF
     
     echo ""
@@ -93,18 +118,21 @@ EOF
     
     curl -s 'http://localhost:9090/api/v1/query?query=rate(node_pressure_io_stalled_seconds_total{pod=~"workload-.*"}[1m])*100' 2>/dev/null | python3 << 'EOF'
 import json, sys
-data = json.load(sys.stdin)
-results = data.get('data', {}).get('result', [])
-if results:
-    for r in sorted(results, key=lambda x: x['metric']['pod']):
-        pod = r['metric']['pod']
-        value = float(r['value'][1])
-        bar_len = int(value * 5)
-        bar = '█' * min(bar_len, 50)
-        status = '🔴 HIGH' if value > 2.0 else '🟢 NORM'
-        print(f'{pod:20} {value:6.2f}% {bar:50} {status}')
-else:
-    print('No data available yet')
+try:
+    data = json.load(sys.stdin)
+    results = data.get('data', {}).get('result', [])
+    if results:
+        for r in sorted(results, key=lambda x: x['metric']['pod']):
+            pod = r['metric']['pod']
+            value = float(r['value'][1])
+            bar_len = int(value * 5)
+            bar = '█' * min(bar_len, 50)
+            status = '🔴 HIGH' if value > 2.0 else '🟢 NORM'
+            print(f'{pod:20} {value:6.2f}% {bar:50} {status}')
+    else:
+        print('No data available yet')
+except:
+    print('⚠ Query failed or no data')
 EOF
     
     echo ""
