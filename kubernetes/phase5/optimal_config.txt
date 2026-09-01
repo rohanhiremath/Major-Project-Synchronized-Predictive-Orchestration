@@ -1,0 +1,13 @@
+OPTIMIZED SPIKE DETECTION CONFIGURATION
+==================================================
+
+Strategy: q90
+Threshold: 1.70%
+
+Performance:
+  Precision: 90.20%
+  Recall:    100.00%
+  F1 Score:  94.85%
+
+Implementation:
+  pred_spike = predictions_q90 > 1.70
