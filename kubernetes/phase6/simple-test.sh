@@ -32,16 +32,33 @@ pkill -f "port-forward.*9090" 2>/dev/null || true
 rm -f /tmp/prediction-service.log /tmp/prediction-metrics.json
 sleep 2
 
+# Deactivate any conda environment first
+if [ -n "$CONDA_DEFAULT_ENV" ]; then
+    echo "Deactivating conda environment: $CONDA_DEFAULT_ENV"
+    eval "$(conda shell.bash hook)" 2>/dev/null || true
+    conda deactivate 2>/dev/null || true
+fi
+
 # Activate venv
 echo "Activating virtual environment..."
+if [ ! -d ".venv" ]; then
+    echo "❌ Virtual environment not found at .venv"
+    exit 1
+fi
+
+# Explicitly use venv Python
+export PATH="$PROJECT_ROOT/.venv/bin:$PATH"
 source .venv/bin/activate
+
+echo "Using Python: $(which python)"
+python --version
 
 # Check dependencies
 echo "Checking dependencies..."
-python -c "import torch, pytorch_forecasting, flask, prometheus_client" 2>/dev/null
+$PROJECT_ROOT/.venv/bin/python -c "import torch, pytorch_forecasting, flask, prometheus_client" 2>/dev/null
 if [ $? -ne 0 ]; then
     echo -e "${RED}Missing dependencies! Installing...${NC}"
-    pip install flask prometheus-client requests > /dev/null 2>&1
+    $PROJECT_ROOT/.venv/bin/pip install flask prometheus-client requests > /dev/null 2>&1
 fi
 
 # Check model
@@ -78,7 +95,7 @@ export LOG_LEVEL="INFO"
 # Start prediction service in background
 echo "Starting prediction service..."
 cd kubernetes/phase6
-python prediction_service.py > /tmp/prediction-service.log 2>&1 &
+$PROJECT_ROOT/.venv/bin/python prediction_service.py > /tmp/prediction-service.log 2>&1 &
 SERVICE_PID=$!
 sleep 10
 

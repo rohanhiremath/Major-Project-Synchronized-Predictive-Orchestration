@@ -51,7 +51,7 @@ PREDICTION_INTERVAL = int(os.getenv('PREDICTION_INTERVAL', '20'))  # seconds
 # Service configuration
 SHADOW_MODE = os.getenv('SHADOW_MODE', 'true').lower() == 'true'
 LOG_LEVEL = os.getenv('LOG_LEVEL', 'INFO')
-METRICS_PORT = int(os.getenv('METRICS_PORT', '9090'))
+METRICS_PORT = int(os.getenv('METRICS_PORT', '8090'))
 API_PORT = int(os.getenv('API_PORT', '8080'))
 
 # Pod labels to monitor
@@ -200,21 +200,27 @@ class PredictionService:
     
     def get_current_psi_metrics(self) -> Dict[str, float]:
         """Get current PSI metrics for all workload pods"""
-        # Query for memory PSI (psi_some_avg10 equivalent)
-        query = f'rate(node_pressure_memory_waiting_seconds_total{{pod=~"{POD_LABEL_SELECTOR}.*"}}[10s]) * 100'
+        # Query for memory PSI - use deriv() to get the rate of change
+        # This shows how fast the PSI counter is increasing (percentage per second)
+        query = f'deriv(node_pressure_memory_waiting_seconds_total{{pod=~"workload-app-.*"}}[2m]) * 100'
         
         result = self.query_prometheus(query)
         
         psi_values = {}
         
-        if result['status'] == 'success':
+        if result['status'] == 'success' and len(result['data']['result']) > 0:
             for item in result['data']['result']:
                 pod = item['metric'].get('pod', 'unknown')
                 value = float(item['value'][1])
+                # Ensure non-negative values
+                if value < 0:
+                    value = 0.0
                 psi_values[pod] = value
                 
                 # Update Prometheus gauge
                 current_psi.labels(pod=pod).set(value)
+        else:
+            logger.warning(f"No PSI metrics found. Query: {query}")
         
         return psi_values
     
