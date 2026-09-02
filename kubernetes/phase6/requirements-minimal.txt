@@ -1,0 +1,24 @@
+# Minimal Prediction Service Dependencies
+# Install only CPU-optimized packages to reduce image size
+
+# PyTorch CPU only (much smaller than GPU version)
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.0.1+cpu
+pytorch-lightning==2.0.7
+pytorch-forecasting==1.0.0
+
+# Data processing (minimal versions)
+pandas==2.0.3
+numpy==1.24.3
+
+# Prometheus client
+prometheus-client==0.17.1
+
+# HTTP requests
+requests==2.31.0
+
+# Flask for health checks  
+flask==2.3.3
+
+# Utilities
+python-dateutil==2.8.2

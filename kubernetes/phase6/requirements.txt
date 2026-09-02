@@ -1,0 +1,22 @@
+# Prediction Service Dependencies
+
+# PyTorch (standard version)
+torch==2.0.1
+pytorch-lightning==2.0.7
+pytorch-forecasting==1.0.0
+
+# Data processing
+pandas==2.0.3
+numpy==1.24.3
+
+# Prometheus client
+prometheus-client==0.17.1
+
+# HTTP requests
+requests==2.31.0
+
+# Flask for health checks
+flask==2.3.3
+
+# Utilities
+python-dateutil==2.8.2
