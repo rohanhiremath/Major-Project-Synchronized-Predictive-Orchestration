@@ -1,0 +1,42 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: prediction-service
+  namespace: default
+  labels:
+    app: prediction-service
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: prediction-service-role
+  labels:
+    app: prediction-service
+rules:
+# Read pods to get labels and status
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get", "list", "watch"]
+
+# Read pod metrics
+- apiGroups: ["metrics.k8s.io"]
+  resources: ["pods"]
+  verbs: ["get", "list"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: prediction-service-binding
+  labels:
+    app: prediction-service
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: prediction-service-role
+subjects:
+- kind: ServiceAccount
+  name: prediction-service
+  namespace: default

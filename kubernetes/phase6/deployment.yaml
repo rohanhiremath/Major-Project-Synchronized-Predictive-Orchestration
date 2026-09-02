@@ -1,0 +1,137 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prediction-service
+  namespace: default
+  labels:
+    app: prediction-service
+    version: v1.0.0
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: prediction-service
+  template:
+    metadata:
+      labels:
+        app: prediction-service
+        version: v1.0.0
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9090"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: prediction-service
+      containers:
+      - name: prediction-service
+        image: prediction-service:v1.0.0
+        imagePullPolicy: Never  # Use local image from kind
+        
+        ports:
+        - name: api
+          containerPort: 8080
+          protocol: TCP
+        - name: metrics
+          containerPort: 9090
+          protocol: TCP
+        
+        env:
+        - name: SPIKE_THRESHOLD
+          valueFrom:
+            configMapKeyRef:
+              name: prediction-service-config
+              key: SPIKE_THRESHOLD
+        - name: MAX_ENCODER_LENGTH
+          valueFrom:
+            configMapKeyRef:
+              name: prediction-service-config
+              key: MAX_ENCODER_LENGTH
+        - name: MAX_PREDICTION_LENGTH
+          valueFrom:
+            configMapKeyRef:
+              name: prediction-service-config
+              key: MAX_PREDICTION_LENGTH
+        - name: PROMETHEUS_URL
+          valueFrom:
+            configMapKeyRef:
+              name: prediction-service-config
+              key: PROMETHEUS_URL
+        - name: PREDICTION_INTERVAL
+          valueFrom:
+            configMapKeyRef:
+              name: prediction-service-config
+              key: PREDICTION_INTERVAL
+        - name: POD_LABEL_SELECTOR
+          valueFrom:
+            configMapKeyRef:
+              name: prediction-service-config
+              key: POD_LABEL_SELECTOR
+        - name: SHADOW_MODE
+          valueFrom:
+            configMapKeyRef:
+              name: prediction-service-config
+              key: SHADOW_MODE
+        - name: LOG_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              name: prediction-service-config
+              key: LOG_LEVEL
+        - name: METRICS_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: prediction-service-config
+              key: METRICS_PORT
+        - name: API_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: prediction-service-config
+              key: API_PORT
+        - name: MODEL_PATH
+          valueFrom:
+            configMapKeyRef:
+              name: prediction-service-config
+              key: MODEL_PATH
+        
+        resources:
+          requests:
+            cpu: 500m
+            memory: 1Gi
+          limits:
+            cpu: 1000m
+            memory: 2Gi
+        
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
+        
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1000
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          readOnlyRootFilesystem: false
+      
+      restartPolicy: Always
+      
+      # Pod security settings
+      securityContext:
+        fsGroup: 1000
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
