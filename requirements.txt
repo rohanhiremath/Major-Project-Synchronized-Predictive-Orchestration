@@ -61,3 +61,4 @@ tqdm==4.70.0
 triton==3.7.1
 typing_extensions==4.16.0
 yarl==1.24.5
+prometheus_client==0.17.1

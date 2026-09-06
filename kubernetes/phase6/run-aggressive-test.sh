@@ -103,15 +103,15 @@ for i in $(seq 1 $ITERATIONS); do
     echo "▶ AGGRESSIVE: High memory + CPU stress..."
     
     # Pod 0: Very high memory stress
-    kubectl exec workload-app-0 -c workload -- stress-ng --vm 3 --vm-bytes 90% --timeout ${BURST_DURATION}s &>/dev/null &
+    kubectl exec workload-app-0 -c app -- stress-ng --vm 3 --vm-bytes 90% --timeout ${BURST_DURATION}s &>/dev/null &
     STRESS_PID_0=$!
     
     # Pod 1: Full CPU + some memory
-    kubectl exec workload-app-1 -c workload -- stress-ng --cpu 4 --vm 1 --vm-bytes 70% --timeout ${BURST_DURATION}s &>/dev/null &
+    kubectl exec workload-app-1 -c app -- stress-ng --cpu 4 --vm 1 --vm-bytes 70% --timeout ${BURST_DURATION}s &>/dev/null &
     STRESS_PID_1=$!
     
     # Pod 2: Mixed heavy stress
-    kubectl exec workload-app-2 -c workload -- stress-ng --vm 2 --vm-bytes 85% --cpu 2 --io 2 --timeout ${BURST_DURATION}s &>/dev/null &
+    kubectl exec workload-app-2 -c app -- stress-ng --vm 2 --vm-bytes 85% --cpu 2 --io 2 --timeout ${BURST_DURATION}s &>/dev/null &
     STRESS_PID_2=$!
     
     echo "  Stress workloads started (PIDs: $STRESS_PID_0 $STRESS_PID_1 $STRESS_PID_2)"

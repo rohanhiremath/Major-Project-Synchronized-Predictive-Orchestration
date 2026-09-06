@@ -1,0 +1,17 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: prediction-service
+  namespace: default
+  labels:
+    app: prediction-service
+    release: kube-prometheus-stack  # Important: matches Prometheus selector
+spec:
+  selector:
+    matchLabels:
+      app: prediction-service
+  endpoints:
+  - port: metrics
+    interval: 20s  # Scrape every 20 seconds (matches prediction interval)
+    path: /metrics
+    scheme: http
