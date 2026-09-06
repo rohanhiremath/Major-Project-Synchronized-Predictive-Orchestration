@@ -530,41 +530,48 @@ Major-Project-Synchronized-Predictive-Orchestration/
 
 ---
 
-### **Day 5: Comparative Analysis** ✅ COMPLETE
+### **Day 5: Comparative Analysis** ✅ ANALYTICAL PROJECTION
 
-**Goal**: Generate paper-ready comparative results
+**Goal**: Generate initial comparative estimates for planning
+
+**Approach**: Analytical projection (NOT empirical measurement)
 
 **Completed**:
-- ✅ Used Phase 6 validation data (107 real spikes, 666 predictions)
-- ✅ Modeled HPA timing behavior (Kubernetes-documented)
-- ✅ Generated comparative results table
-- ✅ Calculated all metrics: latency, breach duration, breach count
+- ✅ Used Phase 6 validation data (107 real spikes, 666 predictions) as baseline
+- ✅ Modeled HPA timing behavior using Kubernetes-documented parameters
+- ✅ Generated projected results table
+- ✅ Calculated estimated metrics: latency, breach duration, breach count
 - ✅ Conservative estimates, fully documented
 - ✅ Academic justification provided
 
+**IMPORTANT**: These are **analytical projections** based on:
+1. Validated Phase 6 prediction accuracy (94.69%/100% raw, 100%/88.79% gated)
+2. Documented Kubernetes HPA timing behavior (sync period, stabilization windows)
+3. Conservative pod provisioning estimates (30-60s)
+
+**Limitation**: Not empirically measured via live A/B experiment. **Must be clearly labeled as projections in paper**, with empirical validation listed as future work if 24-hour experiment cannot be completed before submission.
+
 **Time**: ~1 hour  
 **Deliverables**:
-- `analyze-phase6-hpa-comparison.py` (analytical comparison script)
-- `hpa-comparison-results.txt` (full results)
-- `DAY5_COMPLETE.md` (comprehensive documentation)
+- `analyze-phase6-hpa-comparison.py` (analytical projection script)
+- `hpa-comparison-results.txt` (projected results)
+- `DAY5_COMPLETE.md` (comprehensive documentation with limitations noted)
 - `DAY5_PRAGMATIC_APPROACH.md` (methodology justification)
 
-**COMPARATIVE RESULTS** (Paper-Ready):
+**PROJECTED RESULTS** (Analytical, Not Measured):
 
-| Metric | Reactive HPA | Predictive HPA | Improvement |
-|--------|--------------|----------------|-------------|
-| Scale-up Latency (avg) | 90s | 60s | **33.3% faster** |
-| PSI Breach Duration (avg) | 90s | 0s | **100% reduction** |
-| Total Breaches (107 spikes) | 107 | 12 | **88.8% fewer** |
+| Metric | Reactive HPA | Predictive HPA | Projected Improvement |
+|--------|--------------|----------------|----------------------|
+| Scale-up Latency (avg) | ~90s | ~60s | **~33% faster** |
+| PSI Breach Duration (avg) | ~90s | ~0s | **~100% reduction** |
+| Total Breaches (107 spikes) | 107 | ~12 | **~88.8% fewer** |
 | False Positive Rate | N/A | 0.0% | **Perfect** |
 | Prediction Recall | N/A | 88.8% | - |
-| Pod Overhead | Baseline | +10% | Acceptable |
+| Pod Overhead | Baseline | ~+10% | Acceptable |
 
-**Key Findings**:
-1. ✅ PreSync prevents 88.8% of breaches (95 of 107)
-2. ✅ 100% breach prevention for confirmed predictions
-3. ✅ Zero false positives (confirmation gate)
-4. ✅ Only ~10% resource overhead (acceptable)
+**Note**: All numbers marked with "~" are projections. Empirical validation via 24-hour A/B experiment recommended before publication.
+
+**Next Step**: Run actual 24-hour A/B experiment (Day 5 Revised) to replace projections with measured results.
 
 ---
 
@@ -683,8 +690,7 @@ Major-Project-Synchronized-Predictive-Orchestration/
 - **100% elimination** of false positives
 - **Zero unnecessary scale-ups** per day
 - **Perfect precision** - no wasted resources
-- **Estimated savings**: $3,000-6,000 per year (from eliminated false alarms)
-- **Additional savings**: Proactive scaling prevents performance degradation
+- **Proactive scaling prevents performance degradation**
 
 ### Performance Improvements
 - **Zero missed spikes** - 100% recall (raw model)
@@ -740,42 +746,52 @@ Major-Project-Synchronized-Predictive-Orchestration/
 - [x] Verify shadow mode
 - [x] Measure service stability
 
-**Result**: 100% precision, 100% recall on real-time data
+**Result**: Raw model: 94.69% precision, 100% recall | Gated: 100% precision, 88.79% recall
 
 ---
 
 ## 🏆 Current Status
 
-**Phase 8+9 Complete: Days 1-5 Executed - Paper-Ready Results Generated**
+**Phase 8+9: Days 1-5 Complete - 24-Hour Empirical Experiment IN PROGRESS**
 
 ✅ Day 1: Prometheus metrics export (prediction service enhanced)  
 ✅ Day 2: Custom Metrics API configured (7616 metrics available)  
-✅ Day 3: Reactive HPA deployed and working (0/1800m reading)  
+✅ Day 3: Reactive HPA deployed and working (15m/1800m reading)  
 ✅ Day 4: Experiment infrastructure complete (workloads + scripts ready)  
-✅ Day 5: Comparative analysis complete (paper-ready results)  
+✅ Day 5: Analytical projections + hostPath fixed  
+🔄 **24-Hour Experiment**: **RUNNING NOW** (Started Sept 6 @ 6:34 PM)
 
-**Comparative Results Generated**:
-- ✅ 33.3% faster scale-up latency (90s → 60s)
-- ✅ 100% breach duration reduction (90s → 0s for confirmed)
-- ✅ 88.8% fewer total breaches (107 → 12)
-- ✅ 0% false positive rate (confirmation gate working)
-- ✅ Conservative estimates, fully documented
+**Experiment Status**:
+- ✅ Reactive HPA monitoring active (empirical measurements)
+- ✅ Spike generator deployed (every 45 minutes, ~32 events expected)
+- ✅ Logging: HPA status, events, PSI metrics (every 30-60s)
+- ✅ Background processes running (PIDs: 149706, 149708, 149709, 149710)
+- ⏰ End time: September 7, 2026 @ 6:34 PM IST (24 hours from start)
 
-**Phase 6 Validation** (Foundation):
+**What's Being Measured (Empirical)**:
+- Reactive HPA scale-up latency (real measurements)
+- PSI breach duration with reactive scaling
+- Pod provisioning times
+- HPA detection and stabilization behavior
+
+**What Will Be Projected (Analytical)**:
+- Predictive HPA behavior (based on Phase 6 + measured reactive timing)
+- Expected improvements (lead time advantage, breach prevention)
+- Conservative estimates with clear limitations documented
+
+**Phase 6 Validation** (Foundation - Empirical):
 - 100% Precision (0 false positives with confirmation gate)
 - 88.79% Recall (95/107 spikes confirmed)
 - 666 predictions over 3.7 hours
 - 107 real spike events validated
-- Service stable with no errors
-- Ready for paper writing
 
-**Next**: Days 6-7 (Paper Writing) - 6 days ahead of schedule!
+**Next**: Stop monitoring tomorrow evening (Sept 7 @ 6:34 PM), analyze results, write paper with empirical + projected data
 
 ---
 
-*Last Updated: September 6, 2026 @ 6:15 PM IST*  
+*Last Updated: September 6, 2026 @ 6:40 PM IST*  
 *Model Version: tft_psi_model.ckpt v1.0*  
-*Status: Phase 8+9 Complete - Paper-Ready Results Generated*  
-*Next: Days 6-7 (Paper Writing)*  
+*Status: 24-Hour Experiment Running (Empirical Reactive + Analytical Predictive)*  
+*Next: Day 6 (Analysis Sept 7-8) + Days 7-8 (Paper Writing)*  
 *Paper Deadline: September 13, 2026 (6 days remaining)*  
-*Progress: 95% Complete (only writing remaining)*
+*Progress: 90% Complete (experiment running + writing remaining)*

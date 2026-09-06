@@ -59,8 +59,15 @@ spec:
       - name: prediction-service
         image: python:3.10-slim
         command:
-        - python3
-        - /app/prediction_service.py
+        - /bin/sh
+        - -c
+        - |
+          echo "Installing dependencies..."
+          pip install --quiet torch==2.0.1 pytorch-forecasting==1.0.0 pytorch-lightning==2.0.0 pandas numpy prometheus_client requests
+          
+          echo "Starting prediction service..."
+          cd /app
+          python3 prediction_service.py
         ports:
         - containerPort: 8090
           name: metrics
@@ -69,6 +76,8 @@ spec:
           value: "kube-prometheus-stack-prometheus.monitoring.svc.cluster.local:9090"
         - name: NAMESPACE
           value: "experiment-predictive"
+        - name: MODEL_PATH
+          value: "/models/tft_psi_model.ckpt"
         volumeMounts:
         - name: config
           mountPath: /config
@@ -92,15 +101,15 @@ spec:
           name: prediction-service-config
       - name: app
         hostPath:
-          path: /home/kesavan-p/Documents/major project/implementation/Major-Project-Synchronized-Predictive-Orchestration/kubernetes/phase6
+          path: /opt/presync/phase6
           type: Directory
       - name: models
         hostPath:
-          path: /home/kesavan-p/Documents/major project/implementation/Major-Project-Synchronized-Predictive-Orchestration/models
+          path: /opt/presync/models
           type: Directory
       - name: data
         hostPath:
-          path: /home/kesavan-p/Documents/major project/implementation/Major-Project-Synchronized-Predictive-Orchestration/data
+          path: /opt/presync/data
           type: Directory
 
 ---
