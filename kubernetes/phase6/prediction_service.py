@@ -33,6 +33,14 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent / 'src'))
 
 from pytorch_forecasting import TimeSeriesDataSet, TemporalFusionTransformer
 
+# Import confirmation gate from Phase 6
+try:
+    from confirmation_gate import ConfirmationGate
+    CONFIRMATION_GATE_AVAILABLE = True
+except ImportError:
+    logger.warning("⚠️  Confirmation gate not found - will use raw predictions only")
+    CONFIRMATION_GATE_AVAILABLE = False
+
 # ============================================================
 # CONFIGURATION
 # ============================================================
@@ -101,6 +109,21 @@ prometheus_query_duration = Histogram('prometheus_query_duration_seconds',
 model_load_time = Summary('model_load_time_seconds', 'Model loading time')
 
 # ============================================================
+# DAY 1: ADDITIONAL METRICS FOR HPA INTEGRATION
+# ============================================================
+
+# These are the key metrics that HPA will use in Phase 8
+predicted_psi_raw = Gauge('predicted_psi_raw', 
+                          'Raw predicted PSI without confirmation gate', 
+                          ['pod'])
+predicted_psi_confirmed = Gauge('predicted_psi_confirmed', 
+                                'Confirmed predicted PSI (two-consecutive gate)', 
+                                ['pod'])
+confirmation_gate_status = Gauge('confirmation_gate_status',
+                                 'Confirmation gate status (0=not confirmed, 1=confirmed)',
+                                 ['pod'])
+
+# ============================================================
 # PSI DATA BUFFER
 # ============================================================
 
@@ -150,6 +173,17 @@ class PredictionService:
         self.model: Optional[TemporalFusionTransformer] = None
         self.psi_buffer = PSIDataBuffer()
         self.running = True
+        
+        # Initialize confirmation gate (Day 1 enhancement)
+        if CONFIRMATION_GATE_AVAILABLE:
+            self.confirmation_gate = ConfirmationGate(
+                threshold=SPIKE_THRESHOLD,
+                window_seconds=60
+            )
+            logger.info("✅ Confirmation gate initialized (threshold={SPIKE_THRESHOLD}%, window=60s)")
+        else:
+            self.confirmation_gate = None
+            logger.warning("⚠️  Running without confirmation gate")
         
         # Statistics tracking
         self.stats = {
@@ -351,12 +385,40 @@ class PredictionService:
                         if result:
                             q50, q90, current, spike_pred = result
                             
+                            # Export RAW prediction (Day 1 enhancement)
+                            predicted_psi_raw.labels(pod=pod).set(q90)
+                            
+                            # Apply confirmation gate if available (Day 1 enhancement)
+                            is_confirmed = False
+                            if self.confirmation_gate:
+                                is_spike, is_confirmed, reason = self.confirmation_gate.check_spike(
+                                    pod=pod,
+                                    psi_value=current,
+                                    predicted_psi=q90,
+                                    timestamp=now
+                                )
+                                
+                                # Export CONFIRMED prediction only if confirmed
+                                if is_confirmed:
+                                    predicted_psi_confirmed.labels(pod=pod).set(q90)
+                                    confirmation_gate_status.labels(pod=pod).set(1.0)
+                                    logger.info(f"  ✅ CONFIRMED: {reason}")
+                                else:
+                                    confirmation_gate_status.labels(pod=pod).set(0.0)
+                                    if is_spike:
+                                        logger.info(f"  ⏳ WAITING: {reason}")
+                            else:
+                                # No confirmation gate - treat as confirmed
+                                predicted_psi_confirmed.labels(pod=pod).set(q90)
+                                is_confirmed = spike_pred
+                            
                             # Log prediction
                             logger.info(f"Pod {pod}:")
                             logger.info(f"  Current PSI:  {current:.2f}%")
                             logger.info(f"  Predicted q50: {q50:.2f}%")
                             logger.info(f"  Predicted q90: {q90:.2f}%")
-                            logger.info(f"  Spike predicted: {spike_pred}")
+                            logger.info(f"  Spike predicted (raw): {spike_pred}")
+                            logger.info(f"  Spike confirmed (gated): {is_confirmed}")
                             
                             # Update metrics
                             predictions_total.inc()
@@ -364,21 +426,21 @@ class PredictionService:
                             predicted_psi.labels(pod=pod, quantile='q90').set(q90)
                             spike_probability.labels(pod=pod).set(1.0 if spike_pred else 0.0)
                             
-                            if spike_pred:
+                            if is_confirmed:  # Use confirmed decision for actions
                                 spikes_predicted_total.inc()
                                 
                                 if SHADOW_MODE:
                                     logger.info(f"  🔔 SHADOW: Would scale up {pod}")
                                 else:
                                     logger.info(f"  🚀 ACTION: Triggering scale-up for {pod}")
-                                    # TODO: Actual scaling action in Phase 7
+                                    # TODO: Actual scaling action in Phase 8
                             
                             # Track actual spike for statistics
                             actual_spike = current > SPIKE_THRESHOLD
                             if actual_spike:
                                 spikes_actual_total.inc()
                             
-                            self.update_statistics(pod, spike_pred, actual_spike)
+                            self.update_statistics(pod, is_confirmed, actual_spike)
                     
                     else:
                         buffer_size = len(self.psi_buffer.buffers.get(pod, []))

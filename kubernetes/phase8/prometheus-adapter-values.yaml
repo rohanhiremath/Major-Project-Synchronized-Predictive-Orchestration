@@ -1,0 +1,69 @@
+# Prometheus Adapter Configuration for PreSync Metrics
+# This makes predicted PSI metrics available as Kubernetes custom metrics
+
+# Prometheus connection
+prometheus:
+  url: http://kube-prometheus-stack-prometheus.monitoring.svc
+  port: 9090
+
+# Custom metrics rules
+rules:
+  custom:
+  # Rule 1: predicted_psi_confirmed (MAIN METRIC FOR HPA)
+  - seriesQuery: 'predicted_psi_confirmed{pod!=""}'
+    seriesFilters: []
+    resources:
+      overrides:
+        pod:
+          resource: "pod"
+    name:
+      matches: "^(.*)$"
+      as: "predicted_psi_confirmed"
+    metricsQuery: |
+      predicted_psi_confirmed{<<.LabelMatchers>>}
+
+  # Rule 2: predicted_psi_raw (for comparison)
+  - seriesQuery: 'predicted_psi_raw{pod!=""}'
+    seriesFilters: []
+    resources:
+      overrides:
+        pod:
+          resource: "pod"
+    name:
+      matches: "^(.*)$"
+      as: "predicted_psi_raw"
+    metricsQuery: |
+      predicted_psi_raw{<<.LabelMatchers>>}
+
+  # Rule 3: confirmation_gate_status (for monitoring)
+  - seriesQuery: 'confirmation_gate_status{pod!=""}'
+    seriesFilters: []
+    resources:
+      overrides:
+        pod:
+          resource: "pod"
+    name:
+      matches: "^(.*)$"
+      as: "confirmation_gate_status"
+    metricsQuery: |
+      confirmation_gate_status{<<.LabelMatchers>>}
+
+# Resource configuration
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 200m
+    memory: 256Mi
+
+# Replica configuration
+replicas: 1
+
+# Logging
+logLevel: 4  # Verbose logging for debugging
+
+# Service configuration
+service:
+  type: ClusterIP
+  port: 443

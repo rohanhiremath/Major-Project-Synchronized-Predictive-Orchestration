@@ -1,0 +1,29 @@
+{
+  "collection_date": "2026-09-06T14:34:46.173198",
+  "retention_days": 11,
+  "step_seconds": 20,
+  "spike_threshold": 1.8,
+  "total_samples": 26830,
+  "time_range": {
+    "start": "2026-08-27T18:03:04",
+    "end": "2026-09-06T14:34:44",
+    "duration_days": 9
+  },
+  "pods": [
+    "workload-app-1",
+    "workload-app-0",
+    "workload-app-2"
+  ],
+  "psi_stats": {
+    "min": -33.31810169657113,
+    "max": 52.61296771428564,
+    "mean": 0.48820605125863864,
+    "median": 0.008672142857144698,
+    "std": 2.755400034773634
+  },
+  "spikes": {
+    "total_samples": 1161,
+    "percentage": 4.327245620573985,
+    "distinct_events": 53
+  }
+}

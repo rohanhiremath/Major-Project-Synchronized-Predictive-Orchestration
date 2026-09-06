@@ -1,0 +1,42 @@
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: workload-predictive-hpa
+  namespace: default
+  labels:
+    app: workload
+    hpa-type: predictive
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: StatefulSet
+    name: workload-app
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+  # Use predicted PSI (predictive - scales before spike hits)
+  - type: Pods
+    pods:
+      metric:
+        name: predicted_psi_confirmed  # From our prediction service + confirmation gate
+      target:
+        type: AverageValue
+        averageValue: "1800m"  # 1.80% threshold
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 0  # Predictive: scale immediately when confirmed
+      policies:
+      - type: Percent
+        value: 50
+        periodSeconds: 15  # Faster response (15s vs 30s)
+      - type: Pods
+        value: 2
+        periodSeconds: 15
+      selectPolicy: Max
+    scaleDown:
+      stabilizationWindowSeconds: 300  # Same 5-minute cooldown
+      policies:
+      - type: Percent
+        value: 10
+        periodSeconds: 60
+      selectPolicy: Min

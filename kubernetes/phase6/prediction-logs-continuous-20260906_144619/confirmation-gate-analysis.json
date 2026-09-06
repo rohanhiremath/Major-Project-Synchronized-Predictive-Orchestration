@@ -1,0 +1,32 @@
+{
+  "metrics": {
+    "raw": {
+      "true_positives": 107,
+      "false_positives": 6,
+      "false_negatives": 0,
+      "true_negatives": 553,
+      "precision": 94.69026548672566,
+      "recall": 100.0,
+      "f1_score": 97.27272727272728
+    },
+    "gated": {
+      "true_positives": 95,
+      "false_positives": 0,
+      "false_negatives": 12,
+      "true_negatives": 559,
+      "precision": 100.0,
+      "recall": 88.78504672897196,
+      "f1_score": 94.05940594059405
+    }
+  },
+  "gate_stats": {
+    "total_predictions": 666,
+    "single_spike_predictions": 113,
+    "confirmed_spikes": 95,
+    "false_positive_reductions": 0,
+    "confirmation_rate": 84.070796460177,
+    "reduction_rate": 0.0
+  },
+  "total_predictions": 666,
+  "confirmed_spikes": 95
+}

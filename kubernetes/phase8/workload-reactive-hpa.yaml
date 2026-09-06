@@ -1,0 +1,42 @@
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: workload-reactive-hpa
+  namespace: default
+  labels:
+    app: workload
+    hpa-type: reactive
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: StatefulSet
+    name: workload-app
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+  # Use current memory pressure (reactive - responds to current load)
+  - type: Pods
+    pods:
+      metric:
+        name: node_pressure_memory_waiting  # Current PSI from node-exporter
+      target:
+        type: AverageValue
+        averageValue: "1800m"  # 1.80% threshold (matches our spike threshold)
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 30  # Reactive: wait 30s before scaling up
+      policies:
+      - type: Percent
+        value: 50
+        periodSeconds: 30
+      - type: Pods
+        value: 2
+        periodSeconds: 30
+      selectPolicy: Max
+    scaleDown:
+      stabilizationWindowSeconds: 300  # 5-minute cooldown
+      policies:
+      - type: Percent
+        value: 10
+        periodSeconds: 60
+      selectPolicy: Min

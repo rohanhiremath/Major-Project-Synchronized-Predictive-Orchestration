@@ -1,0 +1,153 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: experiment-reactive
+  labels:
+    experiment: phase9
+    hpa-type: reactive
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: workload-config
+  namespace: experiment-reactive
+data:
+  scenario: "mixed"
+  duration: "24h"
+
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: workload-reactive
+  namespace: experiment-reactive
+  labels:
+    app: workload
+    experiment: phase9
+    hpa-type: reactive
+spec:
+  serviceName: workload-reactive
+  replicas: 2  # Initial replicas (HPA will manage this)
+  selector:
+    matchLabels:
+      app: workload
+      hpa-type: reactive
+  template:
+    metadata:
+      labels:
+        app: workload
+        hpa-type: reactive
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9100"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+      - name: app
+        image: nginx:1.25-alpine
+        ports:
+        - containerPort: 80
+          name: http
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+        volumeMounts:
+        - name: workload-scripts
+          mountPath: /workload
+      
+      - name: node-exporter
+        image: prom/node-exporter:v1.6.1
+        args:
+        - --path.rootfs=/host
+        - --collector.pressure
+        ports:
+        - containerPort: 9100
+          name: metrics
+        volumeMounts:
+        - name: proc
+          mountPath: /host/proc
+          readOnly: true
+        - name: sys
+          mountPath: /host/sys
+          readOnly: true
+        securityContext:
+          privileged: true
+      
+      volumes:
+      - name: proc
+        hostPath:
+          path: /proc
+      - name: sys
+        hostPath:
+          path: /sys
+      - name: workload-scripts
+        emptyDir: {}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: workload-reactive
+  namespace: experiment-reactive
+  labels:
+    app: workload
+    hpa-type: reactive
+spec:
+  clusterIP: None  # Headless service for StatefulSet
+  selector:
+    app: workload
+    hpa-type: reactive
+  ports:
+  - port: 80
+    name: http
+  - port: 9100
+    name: metrics
+
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: workload-reactive-hpa
+  namespace: experiment-reactive
+  labels:
+    app: workload
+    hpa-type: reactive
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: StatefulSet
+    name: workload-reactive
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+  - type: Pods
+    pods:
+      metric:
+        name: node_pressure_memory_waiting
+      target:
+        type: AverageValue
+        averageValue: "1800m"  # 1.80% threshold
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 30  # Reactive: 30s delay
+      policies:
+      - type: Percent
+        value: 50
+        periodSeconds: 30
+      - type: Pods
+        value: 2
+        periodSeconds: 30
+      selectPolicy: Max
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Percent
+        value: 10
+        periodSeconds: 60
+      selectPolicy: Min
