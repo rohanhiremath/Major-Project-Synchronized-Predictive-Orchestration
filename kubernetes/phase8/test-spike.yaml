@@ -1,0 +1,37 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-spike-now
+  namespace: default
+spec:
+  restartPolicy: Never
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+        - matchExpressions:
+          - key: kubernetes.io/hostname
+            operator: In
+            values:
+            - presync-control-plane
+  containers:
+  - name: memory-pressure
+    image: polinux/stress
+    command:
+    - stress
+    args:
+    - --vm
+    - "6"           # 6 workers
+    - --vm-bytes
+    - "800M"        # 800MB each = 4.8GB total
+    - --vm-hang
+    - "0"           # Continuous allocation/deallocation
+    - --timeout
+    - "300s"        # 5 minutes
+    resources:
+      requests:
+        memory: "4Gi"
+        cpu: "2000m"
+      limits:
+        memory: "6Gi"
+        cpu: "3000m"
