@@ -1,0 +1,75 @@
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"autoscaling/v2","kind":"HorizontalPodAutoscaler","metadata":{"annotations":{},"labels":{"app":"workload","hpa-type":"reactive"},"name":"workload-reactive-hpa","namespace":"default"},"spec":{"behavior":{"scaleDown":{"policies":[{"periodSeconds":60,"type":"Percent","value":10}],"selectPolicy":"Min","stabilizationWindowSeconds":300},"scaleUp":{"policies":[{"periodSeconds":30,"type":"Percent","value":50},{"periodSeconds":30,"type":"Pods","value":2}],"selectPolicy":"Max","stabilizationWindowSeconds":30}},"maxReplicas":10,"metrics":[{"pods":{"metric":{"name":"node_pressure_memory_waiting"},"target":{"averageValue":"1800m","type":"AverageValue"}},"type":"Pods"}],"minReplicas":2,"scaleTargetRef":{"apiVersion":"apps/v1","kind":"StatefulSet","name":"workload-app"}}}
+  creationTimestamp: "2026-09-06T11:39:53Z"
+  labels:
+    app: workload
+    hpa-type: reactive
+  name: workload-reactive-hpa
+  namespace: default
+  resourceVersion: "448278"
+  uid: 4daa7388-d0bf-4685-9295-a6a178ad98c0
+spec:
+  behavior:
+    scaleDown:
+      policies:
+      - periodSeconds: 60
+        type: Percent
+        value: 10
+      selectPolicy: Min
+      stabilizationWindowSeconds: 300
+    scaleUp:
+      policies:
+      - periodSeconds: 30
+        type: Percent
+        value: 50
+      - periodSeconds: 30
+        type: Pods
+        value: 2
+      selectPolicy: Max
+      stabilizationWindowSeconds: 30
+  maxReplicas: 10
+  metrics:
+  - pods:
+      metric:
+        name: node_pressure_memory_waiting
+      target:
+        averageValue: 1800m
+        type: AverageValue
+    type: Pods
+  minReplicas: 2
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: StatefulSet
+    name: workload-app
+status:
+  conditions:
+  - lastTransitionTime: "2026-09-06T11:39:54Z"
+    message: recommended size matches current size
+    reason: ReadyForNewScale
+    status: "True"
+    type: AbleToScale
+  - lastTransitionTime: "2026-09-08T16:28:56Z"
+    message: the HPA was able to successfully calculate a replica count from pods
+      metric node_pressure_memory_waiting
+    reason: ValidMetricFound
+    status: "True"
+    type: ScalingActive
+  - lastTransitionTime: "2026-09-08T07:24:14Z"
+    message: the desired replica count is less than the minimum replica count
+    reason: TooFewReplicas
+    status: "True"
+    type: ScalingLimited
+  currentMetrics:
+  - pods:
+      current:
+        averageValue: 16m
+      metric:
+        name: node_pressure_memory_waiting
+    type: Pods
+  currentReplicas: 2
+  desiredReplicas: 2
+  lastScaleTime: "2026-09-06T11:48:00Z"

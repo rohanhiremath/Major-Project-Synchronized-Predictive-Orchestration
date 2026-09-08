@@ -1,0 +1,94 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: psi-spike-ultra-strong
+  namespace: default
+spec:
+  schedule: "*/15 * * * *"  # Every 15 minutes
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      parallelism: 8  # Run 8 pods simultaneously
+      completions: 8
+      backoffLimit: 1
+      activeDeadlineSeconds: 600  # 10 minutes max
+      template:
+        metadata:
+          labels:
+            app: psi-spike-generator
+            type: ultra-strong
+        spec:
+          restartPolicy: Never
+          # Try to schedule on same node as workload
+          affinity:
+            nodeAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+                nodeSelectorTerms:
+                - matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values:
+                    - presync-control-plane
+          containers:
+          - name: memory-stress
+            image: polinux/stress
+            command:
+            - stress
+            args:
+            - --vm
+            - "3"           # 3 workers per pod
+            - --vm-bytes
+            - "800M"        # 800MB per worker = 2.4GB per pod
+            - --vm-hang
+            - "0"           # No hang, continuous allocation
+            - --timeout
+            - "480s"        # Run for 8 minutes
+            resources:
+              requests:
+                memory: "2Gi"
+                cpu: "500m"
+              limits:
+                memory: "3Gi"  # 3GB per pod × 8 pods = 24GB total pressure
+                cpu: "1000m"
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: psi-manual-trigger
+  namespace: default
+  labels:
+    app: psi-manual-trigger
+spec:
+  restartPolicy: Never
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+        - matchExpressions:
+          - key: kubernetes.io/hostname
+            operator: In
+            values:
+            - presync-control-plane
+  containers:
+  - name: memory-bomb
+    image: polinux/stress
+    command:
+    - stress
+    args:
+    - --vm
+    - "4"           # 4 workers
+    - --vm-bytes
+    - "1G"          # 1GB per worker = 4GB total
+    - --vm-hang
+    - "0"
+    - --timeout
+    - "600s"        # 10 minutes
+    resources:
+      requests:
+        memory: "3Gi"
+        cpu: "1000m"
+      limits:
+        memory: "5Gi"
+        cpu: "2000m"
