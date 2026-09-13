@@ -1,0 +1,86 @@
+---
+# MEDIUM Stress Test - Safe for 8GB but strong enough to trigger HPA
+# Total: 3 pods × 600MB = 1.8GB max (safe for 8GB laptop)
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: medium-psi-generator
+  namespace: default
+spec:
+  schedule: "*/8 * * * *"  # Every 8 minutes
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      parallelism: 3  # 3 pods
+      completions: 3
+      backoffLimit: 1
+      activeDeadlineSeconds: 360  # 6 minutes
+      template:
+        metadata:
+          labels:
+            app: medium-psi-test
+            type: medium
+        spec:
+          restartPolicy: Never
+          affinity:
+            nodeAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+                nodeSelectorTerms:
+                - matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values:
+                    - presync-control-plane
+          containers:
+          - name: medium-stress
+            image: polinux/stress
+            command:
+            - stress
+            args:
+            - --vm
+            - "3"           # 3 workers per pod
+            - --vm-bytes
+            - "200M"        # 200MB per worker = 600MB per pod
+            - --vm-hang
+            - "0"
+            - --timeout
+            - "300s"        # 5 minutes
+            resources:
+              requests:
+                memory: "500Mi"
+                cpu: "300m"
+              limits:
+                memory: "700Mi"
+                cpu: "600m"
+---
+# Manual trigger - 500MB
+apiVersion: v1
+kind: Pod
+metadata:
+  name: medium-trigger
+  namespace: default
+spec:
+  restartPolicy: Never
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+        - matchExpressions:
+          - key: kubernetes.io/hostname
+            operator: In
+            values:
+            - presync-control-plane
+  containers:
+  - name: stress
+    image: polinux/stress
+    command: ["stress"]
+    args: ["--vm", "3", "--vm-bytes", "170M", "--vm-hang", "0", "--timeout", "360s"]
+    resources:
+      requests:
+        memory: "450Mi"
+        cpu: "300m"
+      limits:
+        memory: "600Mi"
+        cpu: "600m"
