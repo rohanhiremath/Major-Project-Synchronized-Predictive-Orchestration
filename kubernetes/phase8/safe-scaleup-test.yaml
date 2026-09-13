@@ -1,0 +1,97 @@
+---
+# SAFE CronJob for 8GB RAM laptop
+# Total memory pressure: 2 pods × 400MB = 800MB max
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: safe-psi-generator
+  namespace: default
+spec:
+  schedule: "*/10 * * * *"  # Every 10 minutes
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      parallelism: 2  # Only 2 pods at once (SAFE)
+      completions: 2
+      backoffLimit: 1
+      activeDeadlineSeconds: 420  # 7 minutes
+      template:
+        metadata:
+          labels:
+            app: safe-psi-test
+            type: light
+        spec:
+          restartPolicy: Never
+          affinity:
+            nodeAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+                nodeSelectorTerms:
+                - matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values:
+                    - presync-control-plane
+          containers:
+          - name: light-stress
+            image: polinux/stress
+            command:
+            - stress
+            args:
+            - --vm
+            - "2"           # Only 2 workers
+            - --vm-bytes
+            - "200M"        # 200MB per worker = 400MB per pod
+            - --vm-hang
+            - "0"
+            - --timeout
+            - "360s"        # 6 minutes
+            resources:
+              requests:
+                memory: "300Mi"
+                cpu: "200m"
+              limits:
+                memory: "500Mi"  # Max 500MB per pod
+                cpu: "500m"
+---
+# Safe manual trigger - only 300MB total
+apiVersion: v1
+kind: Pod
+metadata:
+  name: safe-trigger
+  namespace: default
+  labels:
+    app: safe-trigger
+spec:
+  restartPolicy: Never
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+        - matchExpressions:
+          - key: kubernetes.io/hostname
+            operator: In
+            values:
+            - presync-control-plane
+  containers:
+  - name: light-load
+    image: polinux/stress
+    command:
+    - stress
+    args:
+    - --vm
+    - "2"           # 2 workers
+    - --vm-bytes
+    - "150M"        # 150MB per worker = 300MB total
+    - --vm-hang
+    - "0"
+    - --timeout
+    - "420s"        # 7 minutes
+    resources:
+      requests:
+        memory: "250Mi"
+        cpu: "200m"
+      limits:
+        memory: "400Mi"  # Max 400MB
+        cpu: "500m"
