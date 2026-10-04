@@ -1,0 +1,264 @@
+╔════════════════════════════════════════════════════════════════════════════════╗
+║                   SIMPLIFIED EXPLANATION OF OUR TEST                           ║
+╚════════════════════════════════════════════════════════════════════════════════╝
+
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ ANALOGY 1: SPAM FILTER FOR YOUR EMAIL                                       │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+OLD (WRONG) WAY:
+  Test Email 1: SPAM ❌ Model says: SPAM ✓
+  Test Email 2: SPAM ❌ Model says: SPAM ✓
+  Test Email 3: SPAM ❌ Model says: SPAM ✓
+  Test Email 4: SPAM ❌ Model says: SPAM ✓
+  
+  Result: 100% accuracy!
+  But... the model just predicts SPAM for EVERYTHING
+  What happens to real emails? They all go to spam folder! 😱
+
+NEW (RIGHT) WAY:
+  Training Data:
+    Email 1: REAL ✓ Model learns: "Real emails have these features"
+    Email 2: SPAM ❌ Model learns: "Spam emails have these features"
+  
+  Test Data (emails model has NEVER seen):
+    Email 3: REAL ✓ Model says: REAL ✓
+    Email 4: SPAM ❌ Model says: SPAM ✓
+    Email 5: REAL ✓ Model says: REAL ✓
+  
+  Result: 90% accuracy on NEW data
+  Translation: "The model actually learned real patterns,
+               not just memorized!"
+
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ WHAT THE TEST LOOKS LIKE OVER TIME                                          │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+DISK I/O PRESSURE OVER 6 HOURS:
+
+PSI 
+30% │
+    │   ╱╲       ╱╲       ╱╲  (Session 1-2: TRAINING)
+20% │  ╱  ╲     ╱  ╲     ╱  ╲
+    │ ╱    ╲   ╱    ╲   ╱    ╲
+10% │╱      ╲ ╱      ╲ ╱      ╲    ╱─ ─ ╱╲ ╱╲ (Session 3-5: TESTING)
+    │        ╲╱        ╲╱       ╲  ╱ ╱╲╱  ╲╱ ╲╱ ─
+ 0% └────────────────────────────╲╱────────────────
+    0h    1h    2h    3h    4h    5h    6h
+
+
+EXPLANATION:
+├─ Session 1 (1h): Simple pattern - Model learns: "Spikes go up 30s, down 30s"
+├─ Session 2 (1.5h): Harder pattern - Model learns: "Can handle more intensity"
+│
+├─ SESSION 3 (1.5h): TESTING STARTS! 🧪
+│  └─ Unpredictable spikes - "Can you handle what you didn't train on?"
+│
+├─ SESSION 4 (1.25h): More testing
+│  └─ Mixed I/O patterns - "What about real-world complexity?"
+│
+└─ SESSION 5 (1h): Final testing
+   └─ Gradual ramps - "Can you tell sudden spikes from slow growth?"
+
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ HOW THE MODEL MAKES PREDICTIONS                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+WHAT THE MODEL SEES:
+
+Input: Last 30 seconds of I/O pressure readings
+  ┌─────────────────────────────────────────┐
+  │ [0.5, 1.2, 2.1, 3.5, 15.2, 25.1, ...]  │
+  │  └─────────── PSI over time ─────────┘  │
+  └─────────────────────────────────────────┘
+
+The model thinks:
+  "Hmm, it's slowly going up: 0.5 → 1.2 → 2.1 (normal)
+   But then JUMP to 15.2 → 25.1 (sudden spike!)
+   
+   Next reading will probably be SPIKE-level PSI
+   My prediction: 18% PSI → This is a SPIKE! 🚨"
+
+Output: Prediction for NEXT reading
+  ┌──────────────────┐
+  │ Spike? YES/NO    │
+  │ Confidence: 90%  │
+  └──────────────────┘
+
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ WHAT METRICS MEAN (REAL EXAMPLE)                                            │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+Imagine the model made 100 predictions:
+
+WHAT ACTUALLY HAPPENED:
+├─ Real spikes occurred: 50 times
+└─ No spike (normal): 50 times
+
+WHAT MODEL PREDICTED:
+├─ Predicted spike: 60 times
+│  ├─ Correct (real spike happened): 45 times ✓ (TRUE POSITIVES)
+│  └─ Wrong (no spike happened): 15 times ✗ (FALSE POSITIVES)
+│
+└─ Predicted no spike: 40 times
+   ├─ Correct (no spike): 35 times ✓ (TRUE NEGATIVES)
+   └─ Wrong (spike happened): 5 times ✗ (FALSE NEGATIVES)
+
+
+CALCULATING METRICS:
+
+PRECISION = "When we say SPIKE, how often are we right?"
+  = TRUE POSITIVES / (TRUE POSITIVES + FALSE POSITIVES)
+  = 45 / (45 + 15)
+  = 45 / 60
+  = 75%
+  
+  Translation: "3 out of 4 spike alerts are real"
+
+RECALL = "When spikes actually happen, how often do we catch them?"
+  = TRUE POSITIVES / (TRUE POSITIVES + FALSE NEGATIVES)
+  = 45 / (45 + 5)
+  = 45 / 50
+  = 90%
+  
+  Translation: "We catch 9 out of 10 real spikes"
+
+F1-SCORE = Balance of precision and recall
+  = ~82%
+  
+  Translation: "Overall model quality is good"
+
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ WHY TRAIN/TEST SPLIT MATTERS                                                │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+WITHOUT TRAIN/TEST SPLIT (WRONG):
+┌──────────────────────────────┐
+│  All 5 sessions mixed        │
+│  (Sessions 1-5)              │
+│  ├─ Know patterns in 1-2     │
+│  ├─ Test on 1-2 again        │
+│  ├─ Accuracy: 95%! 🎉        │
+│  └─ (But we've seen it!)     │
+└──────────────────────────────┘
+
+Result: OVERFITTING
+  "I memorized the answers, but can I solve NEW problems? Unknown!"
+
+
+WITH TRAIN/TEST SPLIT (RIGHT):
+┌──────────────────────────────┐
+│  TRAIN: Sessions 1-2         │
+│  (Model learns here)         │
+│  ├─ low-baseline             │
+│  └─ high-sustained           │
+│  Accuracy on training: 92%   │
+└──────────────────────────────┘
+           ↓
+┌──────────────────────────────┐
+│  TEST: Sessions 3-5          │
+│  (Model is tested here)      │
+│  ├─ bursty-intermittent      │
+│  ├─ mixed-io-http           │
+│  └─ gradual-ramp            │
+│  Accuracy on test: 80% ✓     │
+│  (Honest evaluation!)        │
+└──────────────────────────────┘
+
+Result: HONEST ASSESSMENT
+  "I learned from easy examples (92%), and I still work
+   on hard examples (80%). Real-world performance: ~80%"
+
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ TIMELINE OF WHAT'S HAPPENING RIGHT NOW                                      │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+22:47 ─ START
+│
+├─ 22:47-23:47  Session 1 (low-baseline) - Training data
+│   "Learning what normal low-load looks like"
+│   Predictions: ~60 samples
+│
+├─ 23:47-01:17  Session 2 (high-sustained) - Training data
+│   "Learning what sustained high-load looks like"
+│   Predictions: ~90 samples
+│   >>> TRAINING COMPLETE <<<
+│
+├─ 01:17-02:47  Session 3 (bursty-intermittent) - TEST START! 🧪
+│   "Can you handle random spike patterns?"
+│   Predictions: ~150 samples
+│
+├─ 02:47-04:02  Session 4 (mixed-io-http) - Testing
+│   "Can you handle real mixed workloads?"
+│   Predictions: ~125 samples
+│
+├─ 04:02-05:02  Session 5 (gradual-ramp) - Testing
+│   "Can you tell gradual load from sudden spikes?"
+│   Predictions: ~100 samples
+│   >>> TESTING COMPLETE <<<
+│
+└─ 05:02-05:07  Generate reports
+    "Analyze all predictions, calculate metrics"
+    DONE! ✅
+
+Expected completion: 2026-10-05 04:47 AM IST
+
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ WHAT SUCCESS LOOKS LIKE                                                     │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+TRAINING RESULTS (Expected):
+┌─────────────────────────────────┐
+│ Session 1 & 2 Performance       │
+│ ├─ Precision: ~90% (good!)      │
+│ ├─ Recall: ~92% (good!)         │
+│ └─ F1-Score: ~91%               │
+└─────────────────────────────────┘
+Why high? Model trained on these exact patterns!
+
+
+TEST RESULTS (Expected):
+┌─────────────────────────────────┐
+│ Session 3, 4, 5 Performance     │
+│ ├─ Precision: ~75% (realistic)  │
+│ ├─ Recall: ~88% (good)          │
+│ └─ F1-Score: ~81%               │
+└─────────────────────────────────┘
+Why lower? New patterns model hasn't seen!
+
+INTERPRETATION:
+"Model learned patterns on simple workloads.
+ When challenged with complex workloads,
+ it still works well (75-88% good).
+ This is REALISTIC, TRUSTWORTHY performance!"
+
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ BOTTOM LINE                                                                 │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+WHAT WE'RE TESTING:
+  "Can our spike prediction model work in the real world?"
+
+HOW WE'RE TESTING:
+  1. Train on simple, controlled workloads (2.5 hours)
+  2. Test on complex, realistic workloads (3.75 hours)
+  3. Measure how well it predicts spike/non-spike
+
+WHY IT MATTERS:
+  ✅ Honest evaluation (not fake 99% accuracy)
+  ✅ Real-world performance metrics
+  ✅ Paper gets accepted by reviewers
+  ✅ System can be deployed with confidence
+
+EXPECTED OUTCOME:
+  "Model achieves 75-88% accuracy on test data,
+   demonstrating real-world applicability"
+
