@@ -1,0 +1,303 @@
+╔════════════════════════════════════════════════════════════════════════════════╗
+║                          SYSTEM ARCHITECTURE DIAGRAMS                          ║
+╚════════════════════════════════════════════════════════════════════════════════╝
+
+
+COMPLETE END-TO-END ARCHITECTURE
+════════════════════════════════════════════════════════════════════════════════
+
+┌─ KUBERNETES CLUSTER ──────────────────────────────────────────────────────┐
+│                                                                            │
+│  ┌─────────────────────────────────────────────────────────────────────┐ │
+│  │  WORKLOAD NAMESPACE (3 Pods)                                       │ │
+│  │                                                                     │ │
+│  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐             │ │
+│  │  │  POD 1       │  │  POD 2       │  │  POD 3       │             │ │
+│  │  ├──────────────┤  ├──────────────┤  ├──────────────┤             │ │
+│  │  │ Alpine Linux │  │ Alpine Linux │  │ Alpine Linux │             │ │
+│  │  │ fio (I/O)    │  │ fio (I/O)    │  │ fio (I/O)    │             │ │
+│  │  │ stress-ng    │  │ stress-ng    │  │ stress-ng    │             │ │
+│  │  │ sleep (idle) │  │ sleep (idle) │  │ sleep (idle) │             │ │
+│  │  └──────────────┘  └──────────────┘  └──────────────┘             │ │
+│  │                                                                     │ │
+│  │  30s: AGGRESSIVE I/O → PSI 15-27%                                 │ │
+│  │  30s: IDLE → PSI 0.5-3%                                           │ │
+│  │  (All pods read same /proc/pressure/io file)                      │ │
+│  │                                                                     │ │
+│  └─────────────────────────────────────────────────────────────────────┘ │
+│                                                                            │
+│  ┌─────────────────────────────────────────────────────────────────────┐ │
+│  │  Linux Kernel                                                       │ │
+│  │  └─ /proc/pressure/io (PSI metrics - single source for all pods) │ │
+│  │     Example: "some avg10=2.45 avg60=1.80 avg300=3.55 total=..." │ │
+│  │                                                                     │ │
+│  └─────────────────────────────────────────────────────────────────────┘ │
+│            ▲                                                              │
+│            │ kubectl exec → read PSI                                     │
+│            │                                                              │
+└────────────┼──────────────────────────────────────────────────────────────┘
+             │
+┌────────────┼──────────────────────────────────────────────────────────────┐
+│            │ ORCHESTRATOR (Python)                                        │
+│            │                                                              │
+│  ┌─────────▼──────────────────────────────────────────────────────────┐  │
+│  │ Every 20 Seconds (Heartbeat):                                     │  │
+│  │                                                                    │  │
+│  │  1. Query Pod 1 PSI: 0.52%                                        │  │
+│  │  2. Query Pod 2 PSI: 15.23%                                       │  │
+│  │  3. Query Pod 3 PSI: 1.45%                                        │  │
+│  │                                                                    │  │
+│  │  ┌──────────────────────────────────────────────────────────┐   │  │
+│  │  │ TFT MODEL (Neural Network)                              │   │  │
+│  │  │                                                          │   │  │
+│  │  │  Input: [0.5, 1.2, 2.1, ..., 15.23] (30 samples)      │   │  │
+│  │  │  Normalize: [0.005, 0.012, ..., 0.1523]               │   │  │
+│  │  │  Process: Encoder → Decoder                            │   │  │
+│  │  │  Output: Predict 18.2% for next reading                │   │  │
+│  │  │  Threshold: 18.2% > 1.80%? YES → SPIKE!               │   │  │
+│  │  │  Return: (is_spike=True, confidence=0.92)              │   │  │
+│  │  └──────────────────────────────────────────────────────────┘   │  │
+│  │                                                                    │  │
+│  │  4. Record to CSV: (timestamp, pod, PSI, spike, confidence)     │  │
+│  │  5. Update status.json (progress tracking)                      │  │
+│  │                                                                    │  │
+│  └────────────────────────────────────────────────────────────────┘  │
+│                                  │                                     │
+│                                  ▼                                     │
+│                          raw_data.csv                                 │
+│                    (5000-6000 records total)                          │
+│                                                                        │
+└────────────────────────────────────────────────────────────────────────┘
+
+
+DATA FLOW: 20-SECOND HEARTBEAT CYCLE
+════════════════════════════════════════════════════════════════════════════════
+
+SECOND 0: START HEARTBEAT
+├─ Orchestrator checks: Is session still running?
+│  └─ YES → Proceed
+
+SECOND 1-2: QUERY PODS
+├─ kubectl exec pod1 -- cat /proc/pressure/io
+│  └─ Result: "some avg10=0.52 ..."
+├─ kubectl exec pod2 -- cat /proc/pressure/io
+│  └─ Result: "some avg10=15.23 ..."
+├─ kubectl exec pod3 -- cat /proc/pressure/io
+│  └─ Result: "some avg10=1.45 ..."
+
+SECOND 3-5: MAINTAIN HISTORY & PREDICT
+├─ For Pod 1:
+│  ├─ Add 0.52 to history: [0.5, 1.2, 2.1, ..., 0.52]
+│  ├─ Feed to model
+│  └─ Get: (spike=False, confidence=0.85)
+├─ For Pod 2:
+│  ├─ Add 15.23 to history: [1.2, 2.1, 3.5, ..., 15.23]
+│  ├─ Feed to model
+│  └─ Get: (spike=True, confidence=0.92)
+├─ For Pod 3:
+│  ├─ Add 1.45 to history: [0.6, 1.1, 1.8, ..., 1.45]
+│  ├─ Feed to model
+│  └─ Get: (spike=False, confidence=0.88)
+
+SECOND 6-8: RECORD RESULTS
+├─ Row 1: timestamp=22:47:40, pod=pod1, psi=0.52, spike=False, conf=0.85
+├─ Row 2: timestamp=22:47:40, pod=pod2, psi=15.23, spike=True, conf=0.92
+├─ Row 3: timestamp=22:47:40, pod=pod3, psi=1.45, spike=False, conf=0.88
+
+SECOND 9: UPDATE STATUS
+├─ predictions_made: 1245 → 1248
+├─ elapsed_time: 2m 5s
+├─ status.json updated
+
+SECOND 10-20: WAIT
+└─ Sleep until next heartbeat (10 seconds remaining)
+
+SECOND 20: NEXT HEARTBEAT
+└─ Cycle repeats...
+
+
+TRAINING VS TEST SPLIT VISUALIZATION
+════════════════════════════════════════════════════════════════════════════════
+
+TOTAL 6.25 HOURS
+
+├─ TRAINING SET (2.5 hours, Sessions 1-2)
+│  ├─ Session 1: low-baseline (1 hour)
+│  │  ├─ Workload: Light I/O, steady pattern
+│  │  ├─ PSI range: 0.5% - 15%
+│  │  ├─ Predictions: ~180
+│  │  └─ Model learns: "This is what normal low-load looks like"
+│  │
+│  └─ Session 2: high-sustained (1.5 hours)
+│     ├─ Workload: Heavy I/O, steady high load
+│     ├─ PSI range: 5% - 27%
+│     ├─ Predictions: ~270
+│     └─ Model learns: "This is what sustained high-load looks like"
+│
+│  Expected Accuracy: ~90%
+│  (Model has seen these patterns before)
+│
+│  ════════════════════════════════════════════
+│
+├─ TEST SET (3.75 hours, Sessions 3-5)
+│  ├─ Session 3: bursty-intermittent (1.5 hours)
+│  │  ├─ Workload: Unpredictable spike patterns
+│  │  ├─ PSI: Random timing and intensity
+│  │  └─ Question: "Can you handle patterns you've never seen?"
+│  │
+│  ├─ Session 4: mixed-io-http (1.25 hours)
+│  │  ├─ Workload: Mixed I/O + network
+│  │  ├─ PSI: Complex patterns
+│  │  └─ Question: "What about real-world complexity?"
+│  │
+│  └─ Session 5: gradual-ramp (1 hour)
+│     ├─ Workload: Load gradually increases
+│     ├─ PSI: Gradual rise, no sudden cycles
+│     └─ Question: "Gradual vs sudden? Can you tell the difference?"
+│
+│  Expected Accuracy: ~75-88%
+│  (Model encounters NEW patterns)
+│
+└─ INTERPRETATION:
+   Train: 90% → Test: 81% shows HONEST generalization
+   Model learned well on training data
+   But struggles with new patterns (realistic!)
+
+
+TFT MODEL PREDICTION PIPELINE (Visual)
+════════════════════════════════════════════════════════════════════════════════
+
+INPUT SEQUENCE (Last 30 PSI readings):
+┌─────────────────────────────────────────────────────┐
+│ [0.5, 1.2, 2.1, 3.5, 5.2, 7.8, 10.5, 13.2, 15.2,  │
+│  16.1, 17.5, 18.2, 19.1, 20.3, 21.5, 22.1, 23.8,  │
+│  24.5, 25.2, 26.1, 27.0, 26.5, 25.8, 24.2, 23.1,  │
+│  21.9, 20.5, 18.3, 15.7, 12.4]                     │
+│                                                      │
+│ This shows: Low → Gradual rise → Peak → Decline    │
+└─────────────────────────────────────────────────────┘
+       ↓
+
+NORMALIZATION (0-100% → 0-1):
+┌─────────────────────────────────────────────────────┐
+│ [0.005, 0.012, 0.021, 0.035, 0.052, 0.078, 0.105, │
+│  0.132, 0.152, 0.161, 0.175, 0.182, 0.191, 0.203, │
+│  0.215, 0.221, 0.238, 0.245, 0.252, 0.261, 0.270, │
+│  0.265, 0.258, 0.242, 0.231, 0.219, 0.205, 0.183, │
+│  0.157, 0.124]                                      │
+└─────────────────────────────────────────────────────┘
+       ↓
+
+TFT ENCODER (Attention):
+┌─────────────────────────────────────────────────────┐
+│ "Analyze this sequence:"                            │
+│ - Values gradually rising from start                │
+│ - Peak at around sample 21                          │
+│ - Important features: trend, velocity, peaks        │
+│ - Learns which values matter most                   │
+└─────────────────────────────────────────────────────┘
+       ↓
+
+TFT DECODER (Prediction):
+┌─────────────────────────────────────────────────────┐
+│ "Based on pattern, predict next value:"             │
+│ - Last value: 0.124 (12.4%)                        │
+│ - Trend: Declining                                  │
+│ - History: Was rising, now falling                  │
+│ - Prediction: Will continue declining               │
+│ - Predicted next: 0.098 (9.8% PSI)                 │
+└─────────────────────────────────────────────────────┘
+       ↓
+
+THRESHOLD CHECK:
+┌─────────────────────────────────────────────────────┐
+│ Predicted PSI: 9.8%                                │
+│ Threshold: 1.80%                                    │
+│ Is 9.8% > 1.80%? YES!                             │
+│ Confidence: How far from threshold?                │
+│ = (9.8 - 1.80) / 50 = 0.16 → clamp to 0.99       │
+└─────────────────────────────────────────────────────┘
+       ↓
+
+OUTPUT:
+┌─────────────────────────────────────────────────────┐
+│ is_spike = True                                     │
+│ confidence = 0.99                                   │
+│                                                     │
+│ Interpretation: "Very confident this is a spike"   │
+└─────────────────────────────────────────────────────┘
+
+
+KUBERNETES PODS AND PSI SHARING
+════════════════════════════════════════════════════════════════════════════════
+
+KEY INSIGHT: All pods share the SAME Linux kernel!
+
+┌─ LINUX HOST (Single kernel instance) ────────────────┐
+│                                                       │
+│  /proc/pressure/io file                             │
+│  └─ Updated by kernel                              │
+│     "some avg10=15.2 avg60=14.1 avg300=..."        │
+│                                                       │
+│  ┌─────────────────────────────────────────────────┐│
+│  │ Pod 1 Container          Pod 2 Container        ││
+│  │ ├─ Can read:            ├─ Can read:            ││
+│  │ │  /proc/pressure/io    │  /proc/pressure/io   ││
+│  │ │  Gets 15.2%           │  Gets 15.2%          ││
+│  │ └─ (sees same value!)   └─ (sees same value!)  ││
+│  │                                                  ││
+│  │ Pod 3 Container                                 ││
+│  │ ├─ Can read:                                    ││
+│  │ │  /proc/pressure/io                           ││
+│  │ │  Gets 15.2%                                  ││
+│  │ └─ (sees same value!)                          ││
+│  └─────────────────────────────────────────────────┘│
+│                                                       │
+│ Result:                                              │
+│ Pod 1 reads: 15.2%                                  │
+│ Pod 2 reads: 15.2%                                  │
+│ Pod 3 reads: 15.2%                                  │
+│ (All read same kernel metric!)                      │
+└───────────────────────────────────────────────────────┘
+
+Advantage: One metric source of truth
+No pod-specific metrics, just system-wide PSI
+
+
+COMPLETE DATA PIPELINE (Visual)
+════════════════════════════════════════════════════════════════════════════════
+
+┌─ Kubernetes Pods (30s spike + 30s idle)
+│
+├─ Linux Kernel PSI File (/proc/pressure/io)
+│
+├─ Orchestrator (kubectl exec, every 20s)
+│  ├─ Read PSI: 0.52%, 15.23%, 1.45%
+│  ├─ Maintain history
+│  └─ Feed to model
+│
+├─ TFT Model (Prediction)
+│  ├─ Process: 30-sample sequence
+│  ├─ Output: Spike/no-spike
+│  └─ Confidence: 0-1.0
+│
+├─ CSV File (raw_data.csv)
+│  ├─ timestamp, pod, psi, spike, confidence
+│  ├─ 5000-6000 total rows
+│  └─ One row per heartbeat per pod
+│
+├─ Metrics Calculation
+│  ├─ TP, FP, TN, FN
+│  ├─ Precision = TP/(TP+FP)
+│  ├─ Recall = TP/(TP+FN)
+│  ├─ F1 = 2*P*R/(P+R)
+│  └─ Separate for train and test
+│
+└─ IEEE-Ready Reports
+   ├─ session_breakdown.txt
+   ├─ pooled_summary.txt
+   └─ confusion_matrices.txt
+
+════════════════════════════════════════════════════════════════════════════════
+
+START WITH: BEGINNER_GUIDE.md (explains all this step-by-step!)
