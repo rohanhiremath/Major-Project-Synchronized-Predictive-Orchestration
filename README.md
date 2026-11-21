@@ -271,7 +271,3 @@ For questions or contributions, please open an issue in the repository.
 
 ---
 
-**Status**: Production-Ready Model ✅  
-**Last Updated**: September 1, 2026  
-**Model Version**: tft_psi_model.ckpt (v1.0)  
-**Performance**: 92% Precision, 100% Recall
