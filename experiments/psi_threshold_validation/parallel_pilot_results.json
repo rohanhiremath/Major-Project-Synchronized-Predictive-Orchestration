@@ -1,0 +1,81 @@
+{
+  "results": [
+    {
+      "variant": "baseline",
+      "config": {
+        "name": "baseline",
+        "memory_limit_mb": 256,
+        "working_set_pct": 0.7,
+        "allocation_per_request_kb": 512,
+        "injector_target_mb": 180,
+        "description": "Original configuration"
+      },
+      "baseline_latencies": [],
+      "stress_latencies": [],
+      "success": false,
+      "error": "HTTPConnectionPool(host='localhost', port=30081): Max retries exceeded with url: /release (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x76cdec83c590>: Failed to establish a new connection: [Errno 111] Connection refused'))"
+    },
+    {
+      "variant": "higher_working_set",
+      "config": {
+        "name": "higher_working_set",
+        "memory_limit_mb": 256,
+        "working_set_pct": 0.85,
+        "allocation_per_request_kb": 512,
+        "injector_target_mb": 180,
+        "description": "Increase working set to 85%"
+      },
+      "baseline_latencies": [],
+      "stress_latencies": [],
+      "success": false,
+      "error": "HTTPConnectionPool(host='localhost', port=30081): Max retries exceeded with url: /release (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x76cdec9dac10>: Failed to establish a new connection: [Errno 111] Connection refused'))"
+    },
+    {
+      "variant": "larger_allocation",
+      "config": {
+        "name": "larger_allocation",
+        "memory_limit_mb": 256,
+        "working_set_pct": 0.7,
+        "allocation_per_request_kb": 1024,
+        "injector_target_mb": 180,
+        "description": "Double allocation per request"
+      },
+      "baseline_latencies": [],
+      "stress_latencies": [],
+      "success": false,
+      "error": "HTTPConnectionPool(host='localhost', port=30081): Max retries exceeded with url: /release (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x76cdec9db4d0>: Failed to establish a new connection: [Errno 111] Connection refused'))"
+    },
+    {
+      "variant": "stronger_injector",
+      "config": {
+        "name": "stronger_injector",
+        "memory_limit_mb": 256,
+        "working_set_pct": 0.7,
+        "allocation_per_request_kb": 512,
+        "injector_target_mb": 220,
+        "description": "Increase injector to 220MB"
+      },
+      "baseline_latencies": [],
+      "stress_latencies": [],
+      "success": false,
+      "error": "HTTPConnectionPool(host='localhost', port=30081): Max retries exceeded with url: /release (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x76cdec81e060>: Failed to establish a new connection: [Errno 111] Connection refused'))"
+    },
+    {
+      "variant": "smaller_limit",
+      "config": {
+        "name": "smaller_limit",
+        "memory_limit_mb": 192,
+        "working_set_pct": 0.7,
+        "allocation_per_request_kb": 512,
+        "injector_target_mb": 140,
+        "description": "Reduce limit to 192MB"
+      },
+      "baseline_latencies": [],
+      "stress_latencies": [],
+      "success": false,
+      "error": "HTTPConnectionPool(host='localhost', port=30081): Max retries exceeded with url: /release (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x76cdec81e8b0>: Failed to establish a new connection: [Errno 111] Connection refused'))"
+    }
+  ],
+  "successful_count": 0,
+  "best_variant": null
+}

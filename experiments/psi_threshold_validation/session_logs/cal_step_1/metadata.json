@@ -1,0 +1,19 @@
+{
+  "session_id": 5,
+  "name": "cal_step_1",
+  "set": "CAL",
+  "type": "stress",
+  "profile": "step:200:20",
+  "duration_s": 1200,
+  "request_rate": 40,
+  "start_time": "2026-10-17T23:17:11.181887",
+  "end_time": "2026-10-17T23:37:12.448067",
+  "total_requests": 48000,
+  "total_errors": 0,
+  "aborted": null,
+  "abort_reason": null,
+  "gaps": [],
+  "cgroup_path": "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/app.slice/psitest.scope",
+  "working_set_mb": 600,
+  "ramp_start_mb": 512
+}

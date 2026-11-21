@@ -1,0 +1,17 @@
+{
+  "test_name": "calm_bin_auc_corrected",
+  "overall_auc": 0.5,
+  "signal_std": 0.0,
+  "calm_bins_total": 888,
+  "calm_breach_events": 8,
+  "per_session_auc": {
+    "cal_calm_1": 0.5,
+    "cal_calm_2": 0.5,
+    "cal_calm_3": 0.5,
+    "cal_burst_1": 0.5,
+    "cal_ramp_1": 0.5,
+    "cal_step_1": 0.5
+  },
+  "conclusion": "PASS (constant signal, AUC = 0.5)",
+  "note": "AUC on calm bins should be \u22480.5 if signal is constant (correct by construction)"
+}

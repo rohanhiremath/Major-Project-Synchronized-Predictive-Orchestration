@@ -1,0 +1,17 @@
+{
+  "workload_type": "network",
+  "config": {
+    "description": "Network bursts cause latency spikes",
+    "duration": 600,
+    "network_spike_intensity": 1.8,
+    "network_spike_frequency": 3,
+    "baseline_psi": 0.5,
+    "psi_correlation": 0.7,
+    "seed": 45
+  },
+  "timestamp": "2026-10-21T10:28:14.211314",
+  "samples": 30,
+  "duration_seconds": 600,
+  "slo_breach_count": 0,
+  "slo_breach_rate": 0.0
+}

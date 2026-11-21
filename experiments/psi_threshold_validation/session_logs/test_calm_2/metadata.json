@@ -1,0 +1,19 @@
+{
+  "session_id": 14,
+  "name": "test_calm_2",
+  "set": "TEST",
+  "type": "calm",
+  "profile": "calm:20",
+  "duration_s": 1200,
+  "request_rate": 40,
+  "start_time": "2026-10-18T02:30:46.025331",
+  "end_time": "2026-10-18T02:50:46.043353",
+  "total_requests": 48000,
+  "total_errors": 0,
+  "aborted": null,
+  "abort_reason": null,
+  "gaps": [],
+  "cgroup_path": "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/app.slice/psitest.scope",
+  "working_set_mb": 600,
+  "ramp_start_mb": 512
+}

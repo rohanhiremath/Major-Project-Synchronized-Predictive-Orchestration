@@ -19,7 +19,12 @@ class ConfirmationGate:
     def __init__(self, threshold: float = 1.80, window_seconds: int = 60):
         """
         Args:
-            threshold: PSI threshold for spike detection (%)
+            threshold: PSI threshold for spike detection (%).
+                       Default 1.80 is a project-chosen operating point,
+                       not empirically validated. The host experiment
+                       (verdict.json) tested cgroup avg10; production feeds
+                       a Prometheus deriv() value — a different signal.
+                       Recall at T=1.8 on cgroup avg10 was 0.07 (UNDERPOWERED).
             window_seconds: Time window for consecutive predictions
         """
         self.threshold = threshold

@@ -1,0 +1,159 @@
+{
+  "timestamp": "20261021_155836",
+  "data_file": "data/workload_memory_20261021.csv",
+  "config": {
+    "slo_threshold_ms": 200.0,
+    "sample_interval_seconds": 20,
+    "recall_min": 0.6,
+    "fa_rate_max": 2.0,
+    "precision_min": 0.5,
+    "thresholds_tested": [
+      0.5,
+      0.8,
+      1.0,
+      1.2,
+      1.5,
+      1.8,
+      2.0,
+      2.5,
+      3.0
+    ]
+  },
+  "dataset_stats": {
+    "total_samples": 30,
+    "duration_hours": 0.16666666666666666,
+    "total_breach_events": 4
+  },
+  "threshold_sweep": [
+    {
+      "threshold": 0.5,
+      "num_alerts": 8,
+      "true_alerts": 7,
+      "false_alarms": 1,
+      "fa_rate": 6.0,
+      "recall": 1.0,
+      "precision": 0.875,
+      "detected_breaches": 4,
+      "missed_breaches": 0,
+      "mean_lead_time_s": 20.0,
+      "meets_criteria": false
+    },
+    {
+      "threshold": 0.8,
+      "num_alerts": 8,
+      "true_alerts": 7,
+      "false_alarms": 1,
+      "fa_rate": 6.0,
+      "recall": 1.0,
+      "precision": 0.875,
+      "detected_breaches": 4,
+      "missed_breaches": 0,
+      "mean_lead_time_s": 40.0,
+      "meets_criteria": false
+    },
+    {
+      "threshold": 1.0,
+      "num_alerts": 8,
+      "true_alerts": 7,
+      "false_alarms": 1,
+      "fa_rate": 6.0,
+      "recall": 1.0,
+      "precision": 0.875,
+      "detected_breaches": 4,
+      "missed_breaches": 0,
+      "mean_lead_time_s": 55.0,
+      "meets_criteria": false
+    },
+    {
+      "threshold": 1.2,
+      "num_alerts": 7,
+      "true_alerts": 6,
+      "false_alarms": 1,
+      "fa_rate": 6.0,
+      "recall": 1.0,
+      "precision": 0.8571428571428571,
+      "detected_breaches": 4,
+      "missed_breaches": 0,
+      "mean_lead_time_s": 70.0,
+      "meets_criteria": false
+    },
+    {
+      "threshold": 1.5,
+      "num_alerts": 0,
+      "true_alerts": 0,
+      "false_alarms": 0,
+      "fa_rate": 0.0,
+      "recall": 0.0,
+      "precision": 0.0,
+      "detected_breaches": 0,
+      "missed_breaches": 4,
+      "mean_lead_time_s": 0.0,
+      "meets_criteria": false
+    },
+    {
+      "threshold": 1.8,
+      "num_alerts": 0,
+      "true_alerts": 0,
+      "false_alarms": 0,
+      "fa_rate": 0.0,
+      "recall": 0.0,
+      "precision": 0.0,
+      "detected_breaches": 0,
+      "missed_breaches": 4,
+      "mean_lead_time_s": 0.0,
+      "meets_criteria": false
+    },
+    {
+      "threshold": 2.0,
+      "num_alerts": 0,
+      "true_alerts": 0,
+      "false_alarms": 0,
+      "fa_rate": 0.0,
+      "recall": 0.0,
+      "precision": 0.0,
+      "detected_breaches": 0,
+      "missed_breaches": 4,
+      "mean_lead_time_s": 0.0,
+      "meets_criteria": false
+    },
+    {
+      "threshold": 2.5,
+      "num_alerts": 0,
+      "true_alerts": 0,
+      "false_alarms": 0,
+      "fa_rate": 0.0,
+      "recall": 0.0,
+      "precision": 0.0,
+      "detected_breaches": 0,
+      "missed_breaches": 4,
+      "mean_lead_time_s": 0.0,
+      "meets_criteria": false
+    },
+    {
+      "threshold": 3.0,
+      "num_alerts": 0,
+      "true_alerts": 0,
+      "false_alarms": 0,
+      "fa_rate": 0.0,
+      "recall": 0.0,
+      "precision": 0.0,
+      "detected_breaches": 0,
+      "missed_breaches": 4,
+      "mean_lead_time_s": 0.0,
+      "meets_criteria": false
+    }
+  ],
+  "optimal_threshold": {
+    "threshold": 0.5,
+    "num_alerts": 8,
+    "true_alerts": 7,
+    "false_alarms": 1,
+    "fa_rate": 6.0,
+    "recall": 1.0,
+    "precision": 0.875,
+    "detected_breaches": 4,
+    "missed_breaches": 0,
+    "mean_lead_time_s": 20.0,
+    "meets_criteria": false
+  }
+}

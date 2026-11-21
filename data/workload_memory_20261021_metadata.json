@@ -1,0 +1,17 @@
+{
+  "workload_type": "memory",
+  "config": {
+    "description": "High memory pressure triggers PSI spikes",
+    "duration": 600,
+    "memory_spike_intensity": 2.5,
+    "memory_spike_frequency": 4,
+    "baseline_psi": 0.3,
+    "psi_correlation": 0.9,
+    "seed": 42
+  },
+  "timestamp": "2026-10-21T10:28:00.144547",
+  "samples": 30,
+  "duration_seconds": 600,
+  "slo_breach_count": 12,
+  "slo_breach_rate": 40.0
+}

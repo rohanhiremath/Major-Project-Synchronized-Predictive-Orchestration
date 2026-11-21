@@ -1,0 +1,216 @@
+{
+  "baseline": {
+    "B_ms": 8.870000000000001,
+    "threshold_2B_ms": 17.740000000000002,
+    "calm_bins": 720,
+    "calm_sessions": [
+      "cal_calm_1",
+      "cal_calm_2",
+      "cal_calm_3"
+    ],
+    "latency_stats": {
+      "min": 4.88,
+      "p25": 7.51,
+      "p50": 8.870000000000001,
+      "p75": 10.22,
+      "p95": 13.309499999999993,
+      "max": 69.62,
+      "std": 3.0841523784219254
+    }
+  },
+  "test_1_signal_sanity": {
+    "auc_stress": 0.801058201058201,
+    "stress_bins": 552
+  },
+  "test_2_lag_analysis": {
+    "peak_correlation": 0.4564993443621964,
+    "peak_lag_sec": 0
+  },
+  "test_3_calibration_sweep": {
+    "sweep": [
+      {
+        "T": 0.5,
+        "k": 1,
+        "recall": 0.4878048780487805,
+        "fa_per_hour": 0.0,
+        "tp": 260,
+        "fa": 0,
+        "viable": "False"
+      },
+      {
+        "T": 0.5,
+        "k": 3,
+        "recall": 0.4446529080675422,
+        "fa_per_hour": 0.0,
+        "tp": 237,
+        "fa": 0,
+        "viable": "False"
+      },
+      {
+        "T": 1.0,
+        "k": 1,
+        "recall": 0.028142589118198873,
+        "fa_per_hour": 0.0,
+        "tp": 15,
+        "fa": 0,
+        "viable": "False"
+      },
+      {
+        "T": 1.0,
+        "k": 3,
+        "recall": 0.02626641651031895,
+        "fa_per_hour": 0.0,
+        "tp": 14,
+        "fa": 0,
+        "viable": "False"
+      },
+      {
+        "T": 1.5,
+        "k": 1,
+        "recall": 0.01876172607879925,
+        "fa_per_hour": 0.0,
+        "tp": 10,
+        "fa": 0,
+        "viable": "False"
+      },
+      {
+        "T": 1.5,
+        "k": 3,
+        "recall": 0.01125703564727955,
+        "fa_per_hour": 0.0,
+        "tp": 6,
+        "fa": 0,
+        "viable": "False"
+      },
+      {
+        "T": 1.8,
+        "k": 1,
+        "recall": 0.0150093808630394,
+        "fa_per_hour": 0.0,
+        "tp": 8,
+        "fa": 0,
+        "viable": "False"
+      },
+      {
+        "T": 1.8,
+        "k": 3,
+        "recall": 0.005628517823639775,
+        "fa_per_hour": 0.0,
+        "tp": 3,
+        "fa": 0,
+        "viable": "False"
+      },
+      {
+        "T": 2.0,
+        "k": 1,
+        "recall": 0.01125703564727955,
+        "fa_per_hour": 0.0,
+        "tp": 6,
+        "fa": 0,
+        "viable": "False"
+      },
+      {
+        "T": 2.0,
+        "k": 3,
+        "recall": 0.0,
+        "fa_per_hour": 0.0,
+        "tp": 0,
+        "fa": 0,
+        "viable": "False"
+      },
+      {
+        "T": 2.5,
+        "k": 1,
+        "recall": 0.0075046904315197,
+        "fa_per_hour": 0.0,
+        "tp": 4,
+        "fa": 0,
+        "viable": "False"
+      },
+      {
+        "T": 2.5,
+        "k": 3,
+        "recall": 0.0,
+        "fa_per_hour": 0.0,
+        "tp": 0,
+        "fa": 0,
+        "viable": "False"
+      },
+      {
+        "T": 3.0,
+        "k": 1,
+        "recall": 0.005628517823639775,
+        "fa_per_hour": 0.0,
+        "tp": 3,
+        "fa": 0,
+        "viable": "False"
+      },
+      {
+        "T": 3.0,
+        "k": 3,
+        "recall": 0.0,
+        "fa_per_hour": 0.0,
+        "tp": 0,
+        "fa": 0,
+        "viable": "False"
+      },
+      {
+        "T": 4.0,
+        "k": 1,
+        "recall": 0.001876172607879925,
+        "fa_per_hour": 0.0,
+        "tp": 1,
+        "fa": 0,
+        "viable": "False"
+      },
+      {
+        "T": 4.0,
+        "k": 3,
+        "recall": 0.0,
+        "fa_per_hour": 0.0,
+        "tp": 0,
+        "fa": 0,
+        "viable": "False"
+      },
+      {
+        "T": 5.0,
+        "k": 1,
+        "recall": 0.0,
+        "fa_per_hour": 0.0,
+        "tp": 0,
+        "fa": 0,
+        "viable": "False"
+      },
+      {
+        "T": 5.0,
+        "k": 3,
+        "recall": 0.0,
+        "fa_per_hour": 0.0,
+        "tp": 0,
+        "fa": 0,
+        "viable": "False"
+      }
+    ],
+    "selected": null,
+    "status": "no_viable"
+  },
+  "test_4_held_out_evaluation": {
+    "project": {
+      "T": 1.8,
+      "k": 1,
+      "recall": 0.0,
+      "fa_per_hour": 0.0,
+      "ci_lower": 0.0,
+      "criterion_1": false,
+      "criterion_2": "True",
+      "verdict": "NOT_SUPPORTED"
+    }
+  },
+  "test_5_chance_check": {
+    "observed_recall": 0.0,
+    "shuffled_mean": 0.0,
+    "count_beat": 1000,
+    "pct_beat": 100.0,
+    "verdict": "FAIL"
+  }
+}

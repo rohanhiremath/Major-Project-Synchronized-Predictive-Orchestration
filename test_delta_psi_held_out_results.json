@@ -1,0 +1,36 @@
+{
+  "selected": {
+    "DELTA": 0.5,
+    "k": 1,
+    "tp": 58,
+    "fa_total": 0,
+    "fa_per_hour": 0.0,
+    "fa_ci_lower": 0,
+    "fa_ci_upper": 0.0,
+    "recall": 0.651685393258427,
+    "recall_ci_lower": 0.5482912406815135,
+    "recall_ci_upper": 0.7425266685315979,
+    "precision": 0.03584672435105068,
+    "criterion_1_recall": "False",
+    "criterion_2_fa": "True",
+    "verdict": "NOT_SUPPORTED",
+    "interpretation": "PSI change exceeds 0.5%"
+  },
+  "project_configured_delta": {
+    "DELTA": 1.8,
+    "k": 1,
+    "tp": 45,
+    "fa_total": 0,
+    "fa_per_hour": 0.0,
+    "fa_ci_lower": 0,
+    "fa_ci_upper": 0.0,
+    "recall": 0.5056179775280899,
+    "recall_ci_lower": 0.4036837527420452,
+    "recall_ci_upper": 0.6070872809325145,
+    "precision": 0.04643962848297214,
+    "criterion_1_recall": "False",
+    "criterion_2_fa": "True",
+    "verdict": "NOT_SUPPORTED",
+    "interpretation": "PSI change exceeds 1.8%"
+  }
+}

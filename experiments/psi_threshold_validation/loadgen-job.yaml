@@ -1,0 +1,120 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: loadgen-script
+  namespace: psi-experiment
+data:
+  load_generator.py: |
+    #!/usr/bin/env python3
+    """
+    In-cluster load generator for PSI threshold validation
+    - Constant 10 req/sec background load
+    - Per-request timestamps and latency
+    - Writes CSV with timestamp, latency_ms, status_code
+    """
+    import sys
+    import time
+    import csv
+    from datetime import datetime
+    import requests
+    from pathlib import Path
+    
+    SERVICE_URL = 'http://psi-workload.psi-experiment.svc.cluster.local:8080/work'
+    REQUEST_RATE = 10  # requests per second
+    OUTPUT_FILE = '/results/requests.csv'
+    
+    def main():
+        duration_minutes = int(sys.argv[1]) if len(sys.argv) > 1 else 20
+        duration_seconds = duration_minutes * 60
+        
+        print(f"Starting load generator for {duration_minutes} minutes")
+        print(f"Rate: {REQUEST_RATE} req/sec")
+        print(f"Target: {SERVICE_URL}")
+        print(f"Output: {OUTPUT_FILE}")
+        
+        Path(OUTPUT_FILE).parent.mkdir(parents=True, exist_ok=True)
+        
+        with open(OUTPUT_FILE, 'w', newline='') as f:
+            writer = csv.writer(f)
+            writer.writerow(['timestamp', 'monotonic_time', 'latency_ms', 'status_code'])
+            
+            start_time = time.time()
+            start_monotonic = time.monotonic()
+            request_count = 0
+            interval = 1.0 / REQUEST_RATE
+            
+            while time.time() - start_time < duration_seconds:
+                request_start = time.time()
+                monotonic_time = time.monotonic() - start_monotonic
+                
+                try:
+                    response = requests.get(SERVICE_URL, timeout=5)
+                    latency_ms = (time.time() - request_start) * 1000
+                    status_code = response.status_code
+                except Exception as e:
+                    latency_ms = (time.time() - request_start) * 1000
+                    status_code = 0
+                
+                timestamp = datetime.now().isoformat()
+                writer.writerow([timestamp, f'{monotonic_time:.3f}', f'{latency_ms:.2f}', status_code])
+                
+                request_count += 1
+                if request_count % 50 == 0:
+                    print(f"[{timestamp}] Sent {request_count} requests, last latency: {latency_ms:.2f}ms")
+                
+                # Sleep to maintain rate
+                elapsed = time.time() - request_start
+                sleep_time = max(0, interval - elapsed)
+                time.sleep(sleep_time)
+        
+        print(f"Load generator complete. Total requests: {request_count}")
+    
+    if __name__ == '__main__':
+        main()
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: loadgen
+  namespace: psi-experiment
+spec:
+  backoffLimit: 0
+  ttlSecondsAfterFinished: 3600
+  template:
+    metadata:
+      labels:
+        app: loadgen
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: loadgen
+        image: python:3.11-slim
+        command:
+          - /bin/bash
+          - -c
+          - |
+            pip install -q requests && \
+            python3 /scripts/load_generator.py ${DURATION_MINUTES:-20} && \
+            echo "Load generator finished, keeping pod alive..." && \
+            sleep infinity
+        env:
+        - name: DURATION_MINUTES
+          value: "20"
+        volumeMounts:
+        - name: scripts
+          mountPath: /scripts
+        - name: results
+          mountPath: /results
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "500m"
+      volumes:
+      - name: scripts
+        configMap:
+          name: loadgen-script
+      - name: results
+        emptyDir: {}

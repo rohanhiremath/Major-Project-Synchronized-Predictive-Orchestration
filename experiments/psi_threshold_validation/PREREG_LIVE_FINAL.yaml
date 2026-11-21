@@ -1,0 +1,367 @@
+# PRE-REGISTRATION — LIVE HOST DATA STUDY (FINAL)
+# PSI Threshold Validation on Real Measurements
+#
+# Frozen Date: 2026-10-18
+# Authority: Pre-registration requirement (frozen before any threshold analysis)
+# Status: LOCKED — No changes permitted after this date
+# Data Source: Real live host sessions (not synthetic)
+
+---
+metadata:
+  title: "PSI Threshold Validation — Live Host Sessions (Final Pre-Registration)"
+  date_frozen: "2026-10-18"
+  version: "1.0"
+  status: "FINAL PRE-REGISTRATION (real data, live sessions)"
+  document_sha256: "[to be computed after signature]"
+  previous_study: "Synthetic CSV analysis (ABANDONED)"
+  reason_restart: "Previous study was on co-generated data (correlation=0.9996, flat lag profile). New study uses real live host sessions."
+
+---
+# SIGNAL DEFINITION (LOCKED)
+signal:
+  name: "pod_psi_some_avg10"
+  source: "Kernel cgroup memory.pressure file"
+  cgroup_path: "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/app.slice/psitest.scope/memory.pressure"
+  field: "some" line, "avg10" column
+  units: "%"
+  sampling_interval: "20 seconds"
+  collection_method: "Direct read from cgroup (not Prometheus derivative)"
+  
+  # Note: This is cgroup-level PSI, not node-level
+  # Production uses Prometheus deriv signal; this is closest real measurement
+  data_source_in_csv: "metrics.csv column 'pod_psi_some_avg10'"
+  
+  expected_range: "0.0 – 5.0% (stress-induced; cgroup-level only)"
+  locked_date: "2026-10-18"
+  no_switch_permitted: true
+
+---
+# BASELINE (LOCKED)
+baseline:
+  name: "B"
+  definition: "Median p99_latency_ms where pod_psi_some_avg10 == 0.0"
+  computation: "Computed from calibration calm sessions only"
+  source_file: "metrics.csv from all calibration sessions"
+  
+  # To be computed before analysis:
+  # 1. Extract all rows from calibration calm sessions (cal_calm_1, cal_calm_2, cal_calm_3)
+  # 2. Filter to rows where pod_psi_some_avg10 == 0.0
+  # 3. Compute median(p99_latency_ms)
+  # 4. Lock this value before threshold selection
+  
+  expected_value: "~9 ms (from initial inspection)"
+  threshold_2B: "2.0 * B (to be computed)"
+  locked_before_analysis: true
+
+---
+# BREACH LABEL (LOCKED)
+label:
+  name: "breach_label"
+  definition: |
+    A breach event is marked when p99_latency_ms > 2.0 * B (degradation threshold)
+    for 2 or more consecutive 20-second bins.
+  derivation: |
+    1. Compute B = median(p99_latency_ms) where pod_psi_some_avg10 == 0.0
+    2. Threshold T_breach = 2 * B
+    3. Per-bin: breach = 1 if p99_latency_ms > T_breach, else 0
+    4. Event: breach_label = 1 if bin[i] == 1 AND bin[i+1] == 1, else 0
+    5. This marks consecutive breached bins as part of the same event
+  
+  source_variables: ["p99_latency_ms"]
+  psi_never_used_in_label: true
+  label_independence_verified: true
+  
+  # Note: error_rate is available but not used in primary breach rule
+  # error_rate is < 0.5% throughout; primary driver is latency
+  
+  note: "Label is external measurement (client p99), never reads PSI"
+  locked_date: "2026-10-18"
+  no_retroactive_redefinition_permitted: true
+
+---
+# FALSE ALARM DEFINITIONS (TWO VERSIONS)
+false_alarm_definitions:
+  primary:
+    name: "per_alert"
+    definition: |
+      Count each alert firing as one false alarm (FA).
+      FA_count = number of alert transitions (rising edge) in calm periods
+      FA/hr = FA_count / calm_hours_total
+    
+    rationale: "Operational metric: how many alerts would ops receive per hour?"
+    used_for: "Official pre-registered verdict"
+    locked: true
+    
+    # Alert transition: signal crosses T from below to above
+    # (To avoid counting sustained elevation as multiple FAs)
+    
+  exploratory:
+    name: "per_event"
+    definition: |
+      Group alerts into events (contiguous periods of signal elevation).
+      per_event_FA = false-positive events / total monitoring time
+      
+      Example: if signal stays > T for 60 seconds, count as 1 event
+      (not multiple alerts per time step)
+    
+    rationale: "Investigative metric: how many distinct anomalies are false?"
+    used_for: "Post-hoc analysis only (not official verdict)"
+    locked: false
+    caveat: "Can only be tested on new data if reconsidered; do not use test data"
+
+---
+# ALERT RULE (LOCKED)
+alert_rule:
+  definition: |
+    Alert fires when signal > T for k consecutive 20-second bins.
+  
+  parameters:
+    T_grid:
+      - 0.5
+      - 1.0
+      - 1.5
+      - 1.8
+      - 2.0
+      - 2.5
+      - 3.0
+      - 4.0
+      - 5.0
+    
+    k_values:
+      - 1
+      - 3
+    
+    cooldown_seconds: 60
+    cooldown_bins: 3
+  
+  interpretation: |
+    For each (T, k) pair:
+    - Mark bins where pod_psi_some_avg10 > T
+    - Group into consecutive runs
+    - If run has k+ consecutive bins, fire alert(s)
+    - Apply 60s cooldown to avoid alert spam
+  
+  locked_date: "2026-10-18"
+
+---
+# SELECTION RULE (LOCKED)
+selection_rule:
+  objective: "Maximize recall subject to FA/hr <= 2.0"
+  
+  constraints:
+    fa_per_hour_max: 2.0
+    recall_minimum: 0.5
+  
+  tie_breaking:
+    1: "Fewer false alarms"
+    2: "Higher threshold (prefer conservative)"
+    3: "Lower k (fewer consecutive bins required)"
+  
+  applied_on: "Calibration data only"
+  applied_before: "Test evaluation begins"
+  
+  stop_condition: "If no (T, k) meets both constraints, report 'no_viable_threshold' and stop"
+  
+  frozen_date: "2026-10-18"
+
+---
+# PASS CRITERIA (LOCKED)
+pass_criteria:
+  for_selected_threshold:
+    criterion_1: "Wilson 95% CI lower bound on recall >= 0.60"
+    criterion_2: "FA/hr upper bound (95% CI) <= 2.0"
+    both_must_pass: true
+    verdict_if_both_pass: "SUPPORTED"
+    verdict_if_either_fails: "NOT_SUPPORTED"
+  
+  for_project_configured:
+    # Project default is T=1.8%, k=1
+    T: 1.8
+    k: 1
+    criterion_1: "Same as above"
+    criterion_2: "Same as above"
+    verdict_if_supported: "SUPPORTED (project threshold)"
+    verdict_if_not: "NOT_SUPPORTED (project threshold)"
+  
+  wilson_ci_method: "normal approximation, two-sided 95%"
+  
+  bootstrap:
+    iterations: 2000
+    seed: 42
+    resampling_unit: "per-session (whole sessions resampled, not individual bins)"
+
+---
+# STOP RULES (LOCKED)
+stop_rules:
+  underpowered:
+    condition: "calibration_breach_events < 15 OR test_breach_events < 15 OR test_hours < 3.0"
+    action: "Stop. Report event counts and test hours. Do not proceed to verdict."
+    verdict: "UNDERPOWERED"
+  
+  no_viable_threshold:
+    condition: "No (T, k) pair satisfies recall >= 0.5 AND FA/hr <= 2.0 simultaneously on calibration"
+    action: "Stop. Report all (T, k) results. Skip test evaluation."
+    verdict: "NO_VIABLE_THRESHOLD"
+  
+  test_fails:
+    condition: "Selected (T, k) fails pass criteria on test data (both criteria must pass)"
+    action: "Report failure. Do not select new (T, k) from test data."
+    verdict: "NOT_SUPPORTED"
+
+---
+# DATA SPLITS (LOCKED)
+data_splits:
+  pilot:
+    sessions:
+      - "pilot_calm_baseline"
+    purpose: "Power verification only (excluded from all analysis)"
+    disposition: "NOT USED in calibration or test"
+  
+  calibration:
+    sessions:
+      - "cal_calm_1"
+      - "cal_calm_2"
+      - "cal_calm_3"
+      - "cal_burst_1"
+      - "cal_ramp_1"
+      - "cal_step_1"
+    expected_duration: "~100 minutes"
+    expected_breach_events: ">= 15"
+    purpose: "Threshold sweep, selection rule application"
+    held_out_from_test: true
+  
+  test_held_out:
+    sessions:
+      - "test_calm_1"
+      - "test_calm_2"
+      - "test_burst_1"
+      - "test_ramp_1"
+      - "test_step_1"
+    expected_duration: "~100 minutes"
+    expected_breach_events: ">= 15"
+    purpose: "Final verdict (used exactly once)"
+    held_out_from_calibration: true
+  
+  split_frozen: "2026-10-18"
+  split_deviation_allowed: false
+
+---
+# ANALYSIS PIPELINE (LOCKED)
+analysis_pipeline:
+  sequence:
+    1:
+      name: "Signal sanity"
+      description: "AUC on stress bins, signal distribution"
+      scope: "calibration stress bins only"
+      output: "test_1_live_signal_sanity.json"
+    
+    2:
+      name: "Label independence (lag profile)"
+      description: "Cross-correlation signal vs latency at various lags"
+      scope: "calibration stress bins"
+      output: "test_2_live_lag_analysis.json"
+      expected_finding: "If lag profile peaks at positive lag, signal lags outcome. If flat, co-movement."
+    
+    3:
+      name: "Calibration sweep"
+      description: "All (T, k) pairs; compute recall, FA/hr, precision"
+      scope: "calibration data"
+      output: "test_3_live_calibration_sweep.json"
+    
+    4:
+      name: "Selection"
+      description: "Apply selection rule; identify (T*, k*)"
+      scope: "calibration results"
+      output: "test_4_live_selection_result.json"
+    
+    5:
+      name: "Held-out test"
+      description: "Evaluate selected (T*, k*) and T=1.8% on test data"
+      scope: "test data"
+      output: "test_5_live_test_evaluation.json"
+    
+    6:
+      name: "Chance check"
+      description: "Shuffle breach labels 1000 times; verify result is not by chance"
+      scope: "test data"
+      output: "test_6_live_chance_check.json"
+  
+  no_data_peeking: true
+  no_retroactive_selection: true
+  run_once_only: true
+
+---
+# ANALYST COMMITMENT (LOCKED)
+commitment:
+  analyst: "Kiro (automated)"
+  date_frozen: "2026-10-18"
+  
+  i_commit_to:
+    - "Follow the frozen pipeline in order, without skipping steps"
+    - "Apply selection rule mechanically on calibration (no judgment)"
+    - "Use selected (T*, k*) on test data without modification"
+    - "Report all findings transparently, including negative results"
+    - "Not select new threshold from test data if first fails"
+    - "Document any deviations in DEVIATIONS.md before reporting"
+  
+  i_will_not:
+    - "Peek at test data before calibration analysis is complete"
+    - "Change pass criteria after seeing results"
+    - "Report results without caveat if power is below target"
+    - "Recommend a threshold if pass criteria are not met"
+
+---
+# EXPECTED OUTCOMES (INFORMATIONAL)
+expected_outcomes:
+  note: "These are plausible outcomes, not predictions. Actual results may differ."
+  
+  scenario_1_reactive_signal:
+    description: "Signal lags latency by 20-30 seconds"
+    expected_lag_profile: "Peak correlation at +20 to +30s lag"
+    expected_correlation: "0.4–0.7"
+    interpretation: "Signal is reactive indicator; useful but delayed"
+  
+  scenario_2_predictive_signal:
+    description: "Signal leads latency by 5-15 seconds"
+    expected_lag_profile: "Peak correlation at −5 to −15s lag"
+    expected_correlation: "0.4–0.7"
+    interpretation: "Signal could be predictive; test if recall is high"
+  
+  scenario_3_no_timing:
+    description: "Signal and latency move together with no usable lag"
+    expected_lag_profile: "Flat across all lags"
+    expected_correlation: "0.8–1.0"
+    interpretation: "Co-generated or no timing information; threshold unlikely to work"
+  
+  scenario_4_low_correlation:
+    description: "Signal and latency are weakly related"
+    expected_lag_profile: "Low correlation across all lags"
+    expected_correlation: "< 0.3"
+    interpretation: "Signal provides little information; threshold may not be useful"
+
+---
+# VERSIONING & CHANGE CONTROL
+version_control:
+  previous_version: "PREREG_FROZEN.yaml (synthetic CSV data, ABANDONED)"
+  changes_from_previous:
+    - "Data source changed from synthetic CSVs to real live sessions"
+    - "Signal changed from Prometheus deriv to cgroup pod_psi_some_avg10"
+    - "Baseline B recomputed from live calm sessions"
+    - "Session list updated to available live sessions"
+    - "All rules remain the same (frozen from original)"
+  
+  no_further_changes_permitted: true
+
+---
+# NEXT STEPS
+next_steps:
+  1: "Verify baseline B from calibration calm sessions"
+  2: "Implement and run analysis pipeline (Tests 1–6 on live data)"
+  3: "Generate verdict.json with final results"
+  4: "Write FINAL_VERDICT_LIVE.md with all findings"
+  5: "Compare results on live data with earlier synthetic CSV results"
+
+---
+status: "FROZEN AND READY FOR LIVE DATA ANALYSIS"
+date: "2026-10-18"
+authority: "User requirement + pre-registration discipline"

@@ -1,0 +1,19 @@
+{
+  "session_id": 10,
+  "name": "test_burst_2",
+  "set": "TEST",
+  "type": "stress",
+  "profile": "burst:200:180:90:4",
+  "duration_s": 1200,
+  "request_rate": 40,
+  "start_time": "2026-10-18T01:04:45.195361",
+  "end_time": "2026-10-18T01:24:45.216700",
+  "total_requests": 48000,
+  "total_errors": 0,
+  "aborted": null,
+  "abort_reason": null,
+  "gaps": [],
+  "cgroup_path": "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/app.slice/psitest.scope",
+  "working_set_mb": 600,
+  "ramp_start_mb": 512
+}

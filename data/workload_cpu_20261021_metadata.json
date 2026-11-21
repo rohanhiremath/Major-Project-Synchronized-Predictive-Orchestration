@@ -1,0 +1,17 @@
+{
+  "workload_type": "cpu",
+  "config": {
+    "description": "CPU saturation increases latency",
+    "duration": 600,
+    "cpu_spike_intensity": 1.5,
+    "cpu_spike_frequency": 6,
+    "baseline_psi": 0.2,
+    "psi_correlation": 0.6,
+    "seed": 44
+  },
+  "timestamp": "2026-10-21T10:28:13.333673",
+  "samples": 30,
+  "duration_seconds": 600,
+  "slo_breach_count": 0,
+  "slo_breach_rate": 0.0
+}

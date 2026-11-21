@@ -1,0 +1,146 @@
+================================================================================
+PSI THRESHOLD VALIDATION — PRE-REGISTRATION COMPLETE
+================================================================================
+
+Date: 2026-10-18
+Status: FROZEN AND LOCKED
+Validity: EXPLORATORY_ONLY (synthetic data)
+
+================================================================================
+DOCUMENTS (READ IN ORDER)
+================================================================================
+
+1. FINAL_PREREGISTRATION_SUMMARY.md (START HERE)
+   - Executive summary of all frozen decisions
+   - Critical caveat about synthetic co-generated data
+   - Analysis plan and commitment statement
+
+2. SIGNAL_LOCKED.md (TEST 0)
+   - Signal definition: Prometheus deriv(...[2m])*100
+   - Verified production use, training data match
+   - No switch permitted
+
+3. TEST_1_RESULT.md (TEST 1)
+   - Label independence verified (latency only, no PSI)
+   - Baseline B = 60.34 ms, threshold = 120.68 ms
+   - CRITICAL: signal-latency correlation = 0.9996 (co-generated artifact)
+   - All results will be exploratory_only
+
+4. TEST_2_RESULT.md (TEST 2)
+   - Power analysis: ~173 calibration events, ~43 test events
+   - Event rate sufficient for targets (25+ and 15+)
+   - Threshold locked, no adjustments needed
+
+5. PREREG_FROZEN.yaml (ALL RULES)
+   - Complete frozen specification in YAML
+   - Signal, baseline, threshold, label rule, FA definitions, pass criteria
+   - Stop rules, data splits, analysis sequence
+   - Not human-readable but authoritative
+
+6. test_1_label_independence.py (TEST 1 CODE)
+   - Executable Python script that verifies label independence
+   - Computes correlations, reports baseline B
+   - Proves PSI never read during label computation
+
+7. test_2_pilot.py (TEST 2 CODE)
+   - Executable Python script that pilots the design
+   - Samples from train.csv, reports event rate
+   - Projects power to full experiment
+
+================================================================================
+FROZEN PARAMETERS (DO NOT CHANGE)
+================================================================================
+
+Signal:           deriv(node_pressure_memory_waiting_seconds_total[2m])*100
+Units:            Percent (%)
+Sampling:         20 seconds
+Baseline B:       60.34 ms
+Threshold (2*B):  120.68 ms
+Breach rule:      latency > 120.68 ms for 2+ consecutive bins
+Primary FA:       per_alert (alerts in calm periods / calm hours)
+Pass criteria:    Wilson 95% recall >= 0.60 AND FA/hr <= 2.0
+Selection rule:   max recall s.t. FA/hr <= 2.0
+T_grid:           [0.5, 1.0, 1.5, 1.8, 2.0, 2.5, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]
+k_values:         [1, 3]
+
+Data splits (LOCKED):
+  Pilot (excluded):     train.csv rows 0-59 (0.33 hours)
+  Calibration:          train.csv rows 60-20735 (114.86 hours, ~173 events)
+  Test (held-out once): test.csv + validation.csv (28.8 hours, ~43 events)
+
+Analysis sequence (LOCKED):
+  1. Signal sanity (AUC, shuffled AUC)
+  2. Lag analysis (cross-correlation -60 to +60 seconds)
+  3. Calibration sweep (all T, k pairs; apply selection rule)
+  4. Held-out test (evaluate selected threshold and T=1.8%)
+  5. Chance check (shuffled labels, 1000 resamples)
+
+Stop conditions (LOCKED):
+  - If calibration < 15 events OR test < 15 events: UNDERPOWERED
+  - If no viable (T, k): NO_VIABLE_THRESHOLD
+  - If test fails pass criteria: NOT_SUPPORTED
+
+================================================================================
+CRITICAL CAVEAT: SYNTHETIC CO-GENERATED DATA
+================================================================================
+
+This experiment is conducted on SYNTHETIC DATA where:
+
+  - Signal and latency are co-generated (correlation = 0.9996)
+  - Both depend on shared variable "load" in the data generator
+  - Any threshold found reflects the generator's formula, not real infrastructure
+
+Therefore:
+
+  ✓ All results are marked EXPLORATORY_ONLY
+  ✓ Methodology proves sound (no post-hoc changes, frozen rules, proper stats)
+  ✗ Cannot validate production threshold
+  → Next phase: Apply methodology to real Kubernetes data
+
+AUC=1.0 is EXPECTED (not impressive). Shuffled AUC ≈ 0.5 confirms artifact.
+
+================================================================================
+NEXT STEPS (AFTER PRE-REGISTRATION)
+================================================================================
+
+Ready to run Tests 3-7 per frozen plan:
+
+  1. Implement test_3_signal_sanity.py → Test 3 output
+  2. Implement test_4_lag_analysis.py → Test 4 output
+  3. Implement test_5_calibration_sweep.py → Test 5 output + selected.json
+  4. Implement test_6_held_out_test.py → Test 6 output + verdict.json
+  5. Implement test_7_chance_check.py → Test 7 output + chance_result.json
+
+All analysis must follow PREREG_FROZEN.yaml exactly.
+Any deviation must be documented in DEVIATIONS.md before reporting.
+
+Final verdict will be reported in FINAL_VERDICT.md.
+
+================================================================================
+COMMITMENT
+================================================================================
+
+By this pre-registration, I commit to:
+
+  ✓ No data peeking before analysis
+  ✓ No retroactive rule changes
+  ✓ Mechanical application of pass criteria
+  ✓ Transparent reporting of all findings
+  ✓ Full documentation of deviations
+  ✓ Honest caveat about synthetic data limitations
+
+No new threshold will be selected from test data.
+No post-hoc redefinition of metrics.
+All decisions are documented before analysis.
+
+================================================================================
+STATUS: FROZEN & READY
+================================================================================
+
+Date frozen: 2026-10-18
+Authority: Pre-registration requirement
+Status: LOCKED — No changes permitted
+
+Ready to begin Tests 3-7.
+
+================================================================================

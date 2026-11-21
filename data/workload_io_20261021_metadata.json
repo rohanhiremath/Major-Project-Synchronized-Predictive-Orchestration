@@ -1,0 +1,17 @@
+{
+  "workload_type": "io",
+  "config": {
+    "description": "Disk IO pressure causes PSI changes",
+    "duration": 600,
+    "io_spike_intensity": 2.0,
+    "io_spike_frequency": 5,
+    "baseline_psi": 0.4,
+    "psi_correlation": 0.85,
+    "seed": 43
+  },
+  "timestamp": "2026-10-21T10:28:12.494191",
+  "samples": 30,
+  "duration_seconds": 600,
+  "slo_breach_count": 15,
+  "slo_breach_rate": 50.0
+}

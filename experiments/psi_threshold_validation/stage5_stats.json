@@ -1,0 +1,379 @@
+{
+  "baseline_B_ms": 8.66,
+  "baseline_2B_ms": 17.32,
+  "psi_calm_p95_pct": 0.0,
+  "cal_events_total": 13,
+  "test_events_total": 14,
+  "total_monitored_hours": 5.0,
+  "cal_monitored_hours": 2.6666666666666665,
+  "test_monitored_hours": 2.3333333333333335,
+  "n_calm_sessions": 5,
+  "n_cal_stress_sessions": 5,
+  "n_test_stress_sessions": 5,
+  "sessions": {
+    "cal_burst_1": {
+      "set": "CAL",
+      "type": "stress",
+      "n_events": 3,
+      "events": [
+        {
+          "onset_s": 0.0,
+          "end_s": 205.0,
+          "duration_s": 205.0,
+          "max_p99": 1210.13,
+          "bin_count": 41
+        },
+        {
+          "onset_s": 270.0,
+          "end_s": 735.0,
+          "duration_s": 465.0,
+          "max_p99": 59.96,
+          "bin_count": 80
+        },
+        {
+          "onset_s": 810.0,
+          "end_s": 990.0,
+          "duration_s": 180.0,
+          "max_p99": 38.36,
+          "bin_count": 36
+        }
+      ],
+      "psi_max": 4.73,
+      "psi_mean": 0.40675,
+      "max_p99_ms": 1210.13,
+      "total_bins": 240,
+      "duration_min": 20.0
+    },
+    "test_burst_1": {
+      "set": "TEST",
+      "type": "stress",
+      "n_events": 4,
+      "events": [
+        {
+          "onset_s": 0.0,
+          "end_s": 195.0,
+          "duration_s": 195.0,
+          "max_p99": 37.57,
+          "bin_count": 39
+        },
+        {
+          "onset_s": 270.0,
+          "end_s": 470.0,
+          "duration_s": 200.0,
+          "max_p99": 40.88,
+          "bin_count": 40
+        },
+        {
+          "onset_s": 540.0,
+          "end_s": 725.0,
+          "duration_s": 185.0,
+          "max_p99": 52.28,
+          "bin_count": 37
+        },
+        {
+          "onset_s": 810.0,
+          "end_s": 1020.0,
+          "duration_s": 210.0,
+          "max_p99": 46.93,
+          "bin_count": 41
+        }
+      ],
+      "psi_max": 1.78,
+      "psi_mean": 0.35550000000000004,
+      "max_p99_ms": 52.28,
+      "total_bins": 240,
+      "duration_min": 20.0
+    },
+    "cal_ramp_1": {
+      "set": "CAL",
+      "type": "stress",
+      "n_events": 1,
+      "events": [
+        {
+          "onset_s": 525.0,
+          "end_s": 1200.0,
+          "duration_s": 675.0,
+          "max_p99": 40.62,
+          "bin_count": 135
+        }
+      ],
+      "psi_max": 0.88,
+      "psi_mean": 0.23141666666666666,
+      "max_p99_ms": 40.62,
+      "total_bins": 240,
+      "duration_min": 20.0
+    },
+    "test_ramp_1": {
+      "set": "TEST",
+      "type": "stress",
+      "n_events": 1,
+      "events": [
+        {
+          "onset_s": 485.0,
+          "end_s": 1200.0,
+          "duration_s": 715.0,
+          "max_p99": 42.6,
+          "bin_count": 136
+        }
+      ],
+      "psi_max": 0.74,
+      "psi_mean": 0.23425,
+      "max_p99_ms": 42.6,
+      "total_bins": 240,
+      "duration_min": 20.0
+    },
+    "cal_step_1": {
+      "set": "CAL",
+      "type": "stress",
+      "n_events": 1,
+      "events": [
+        {
+          "onset_s": 0.0,
+          "end_s": 1200.0,
+          "duration_s": 1200.0,
+          "max_p99": 115.65,
+          "bin_count": 240
+        }
+      ],
+      "psi_max": 1.48,
+      "psi_mean": 0.5146250000000001,
+      "max_p99_ms": 115.65,
+      "total_bins": 240,
+      "duration_min": 20.0
+    },
+    "test_step_1": {
+      "set": "TEST",
+      "type": "stress",
+      "n_events": 1,
+      "events": [
+        {
+          "onset_s": 0.0,
+          "end_s": 1200.0,
+          "duration_s": 1200.0,
+          "max_p99": 49.23,
+          "bin_count": 240
+        }
+      ],
+      "psi_max": 1.03,
+      "psi_mean": 0.6000416666666666,
+      "max_p99_ms": 49.23,
+      "total_bins": 240,
+      "duration_min": 20.0
+    },
+    "cal_calm_1": {
+      "set": "CAL",
+      "type": "calm",
+      "n_events": 0,
+      "events": [],
+      "psi_max": 0.0,
+      "psi_mean": 0.0,
+      "max_p99_ms": 16.63,
+      "total_bins": 240,
+      "duration_min": 20.0
+    },
+    "test_calm_1": {
+      "set": "TEST",
+      "type": "calm",
+      "n_events": 0,
+      "events": [],
+      "psi_max": 0.0,
+      "psi_mean": 0.0,
+      "max_p99_ms": 17.93,
+      "total_bins": 240,
+      "duration_min": 20.0
+    },
+    "cal_calm_2": {
+      "set": "CAL",
+      "type": "calm",
+      "n_events": 0,
+      "events": [],
+      "psi_max": 0.0,
+      "psi_mean": 0.0,
+      "max_p99_ms": 69.62,
+      "total_bins": 240,
+      "duration_min": 20.0
+    },
+    "test_burst_2": {
+      "set": "TEST",
+      "type": "stress",
+      "n_events": 4,
+      "events": [
+        {
+          "onset_s": 0.0,
+          "end_s": 185.0,
+          "duration_s": 185.0,
+          "max_p99": 163.85,
+          "bin_count": 37
+        },
+        {
+          "onset_s": 270.0,
+          "end_s": 460.0,
+          "duration_s": 190.0,
+          "max_p99": 39.27,
+          "bin_count": 38
+        },
+        {
+          "onset_s": 540.0,
+          "end_s": 730.0,
+          "duration_s": 190.0,
+          "max_p99": 37.18,
+          "bin_count": 37
+        },
+        {
+          "onset_s": 810.0,
+          "end_s": 995.0,
+          "duration_s": 185.0,
+          "max_p99": 34.3,
+          "bin_count": 37
+        }
+      ],
+      "psi_max": 3.1,
+      "psi_mean": 0.22837500000000002,
+      "max_p99_ms": 163.85,
+      "total_bins": 240,
+      "duration_min": 20.0
+    },
+    "cal_burst_2": {
+      "set": "CAL",
+      "type": "stress",
+      "n_events": 4,
+      "events": [
+        {
+          "onset_s": 0.0,
+          "end_s": 185.0,
+          "duration_s": 185.0,
+          "max_p99": 33.06,
+          "bin_count": 37
+        },
+        {
+          "onset_s": 270.0,
+          "end_s": 455.0,
+          "duration_s": 185.0,
+          "max_p99": 31.31,
+          "bin_count": 37
+        },
+        {
+          "onset_s": 545.0,
+          "end_s": 730.0,
+          "duration_s": 185.0,
+          "max_p99": 34.65,
+          "bin_count": 37
+        },
+        {
+          "onset_s": 810.0,
+          "end_s": 995.0,
+          "duration_s": 185.0,
+          "max_p99": 72.8,
+          "bin_count": 37
+        }
+      ],
+      "psi_max": 1.45,
+      "psi_mean": 0.17158333333333334,
+      "max_p99_ms": 72.8,
+      "total_bins": 240,
+      "duration_min": 20.0
+    },
+    "test_burst_3": {
+      "set": "TEST",
+      "type": "stress",
+      "n_events": 4,
+      "events": [
+        {
+          "onset_s": 0.0,
+          "end_s": 185.0,
+          "duration_s": 185.0,
+          "max_p99": 31.61,
+          "bin_count": 37
+        },
+        {
+          "onset_s": 270.0,
+          "end_s": 460.0,
+          "duration_s": 190.0,
+          "max_p99": 47.87,
+          "bin_count": 38
+        },
+        {
+          "onset_s": 540.0,
+          "end_s": 735.0,
+          "duration_s": 195.0,
+          "max_p99": 34.93,
+          "bin_count": 39
+        },
+        {
+          "onset_s": 810.0,
+          "end_s": 1010.0,
+          "duration_s": 200.0,
+          "max_p99": 30.19,
+          "bin_count": 40
+        }
+      ],
+      "psi_max": 1.33,
+      "psi_mean": 0.16079166666666664,
+      "max_p99_ms": 47.87,
+      "total_bins": 240,
+      "duration_min": 20.0
+    },
+    "cal_burst_3": {
+      "set": "CAL",
+      "type": "stress",
+      "n_events": 4,
+      "events": [
+        {
+          "onset_s": 0.0,
+          "end_s": 185.0,
+          "duration_s": 185.0,
+          "max_p99": 45.85,
+          "bin_count": 37
+        },
+        {
+          "onset_s": 270.0,
+          "end_s": 460.0,
+          "duration_s": 190.0,
+          "max_p99": 39.94,
+          "bin_count": 38
+        },
+        {
+          "onset_s": 540.0,
+          "end_s": 730.0,
+          "duration_s": 190.0,
+          "max_p99": 31.89,
+          "bin_count": 38
+        },
+        {
+          "onset_s": 810.0,
+          "end_s": 995.0,
+          "duration_s": 185.0,
+          "max_p99": 31.52,
+          "bin_count": 37
+        }
+      ],
+      "psi_max": 1.92,
+      "psi_mean": 0.152375,
+      "max_p99_ms": 45.85,
+      "total_bins": 240,
+      "duration_min": 20.0
+    },
+    "test_calm_2": {
+      "set": "TEST",
+      "type": "calm",
+      "n_events": 0,
+      "events": [],
+      "psi_max": 0.0,
+      "psi_mean": 0.0,
+      "max_p99_ms": 9.75,
+      "total_bins": 240,
+      "duration_min": 20.0
+    },
+    "cal_calm_3": {
+      "set": "CAL",
+      "type": "calm",
+      "n_events": 0,
+      "events": [],
+      "psi_max": 0.0,
+      "psi_mean": 0.0,
+      "max_p99_ms": 10.69,
+      "total_bins": 240,
+      "duration_min": 20.0
+    }
+  }
+}

@@ -1,0 +1,358 @@
+# PRE-REGISTRATION — FROZEN
+# PSI Threshold Validation Experiment (Exploratory on Synthetic Data)
+#
+# Frozen Date: 2026-10-18
+# Authority: Pre-registration requirement
+# Status: LOCKED — No changes permitted after this date
+#
+# ===================================================================
+# CRITICAL CAVEAT
+# ===================================================================
+#
+# This experiment is conducted on SYNTHETIC CO-GENERATED DATA
+# (signal-latency correlation = 0.9996, per Test 1).
+#
+# All results are marked EXPLORATORY_ONLY and cannot be used to
+# validate a production threshold. A threshold validated on co-generated
+# data reflects the data generator, not real infrastructure behavior.
+#
+# This pre-registration serves to demonstrate the METHODOLOGY is sound
+# (no post-hoc rule changes, frozen analysis, proper statistics).
+# The methodology can be applied to real data in a future phase.
+#
+# ===================================================================
+
+---
+metadata:
+  title: "PSI Threshold Validation — Frozen Pre-Registration"
+  date_frozen: "2026-10-18"
+  author: "Kiro (automated)"
+  version: "1.0"
+  status: "EXPLORATORY_ONLY (synthetic data)"
+  document_sha256: "[to be computed]"
+
+---
+# TEST 0 RESULTS: SIGNAL LOCKED
+signal:
+  name: "psi_memory_deriv_pct"
+  query: "deriv(node_pressure_memory_waiting_seconds_total{pod=~\"workload-app-.*\"}[2m]) * 100"
+  description: "Prometheus rate-of-change of PSI memory waiting counter, scaled to percent"
+  source_in_production: "kubernetes/phase6/prediction_service.py line 267"
+  units: "%"
+  sampling_interval_seconds: 20
+  data_columns:
+    - train.csv: "psi_some_avg10"
+    - test.csv: "psi_some_avg10"
+    - validation.csv: "psi_some_avg10"
+  range_in_data:
+    min: 0.0
+    max: 9.7081
+    p50: 0.0232
+    p90: 2.9757
+    p99: 7.3724
+  locked_date: "2026-10-18"
+  no_switch_permitted: true
+  reason_locked: "Production uses this signal; matches training data"
+
+---
+# TEST 1 RESULTS: LABEL (BREACH DEFINITION) LOCKED
+label:
+  name: "breach_label"
+  definition: |
+    A breach event is when latency_ms > 2.0 * B for 2+ consecutive 20s bins.
+  derivation: |
+    1. B = baseline latency = median(latency_ms) where psi_some_avg10 == 0.0 (train.csv only)
+    2. B = 60.34 ms (per Test 1)
+    3. Threshold = 2 * B = 120.68 ms
+    4. Per-bin: if latency_ms > 120.68 ms, mark as above threshold
+    5. Event: 2+ consecutive bins above threshold = breach event
+    6. Example: bins [i, i+1] both > 120.68 ms → bins [i, i+1] count as 1 event
+  source_variables: ["latency_ms", "error_rate"]
+  psi_never_used_in_label: true
+  independence_verified: true
+  correlation_to_signal_calm_bins: "NaN (zero variance)"
+  correlation_to_signal_stress_bins: "0.9996-0.9998 (co-generated artifact, per Test 1)"
+  baseline_B_ms: 60.34
+  threshold_2B_ms: 120.68
+  locked_date: "2026-10-18"
+  no_retroactive_redefinition_permitted: true
+
+---
+# TEST 2 RESULTS: POWER LOCKED
+power_analysis:
+  pilot_event_rate: 0.5
+  pilot_event_rate_unit: "events per 20-minute session"
+  source: "Test 2 sampling across train.csv"
+  
+  calibration_projection:
+    duration_hours: 115.2
+    num_sessions: 345
+    projected_events: 173
+    target_minimum: 25
+    met: true
+    margin: "6.9x"
+  
+  test_projection:
+    duration_hours: 28.8
+    num_sessions: 86
+    projected_events: 43
+    target_minimum: 15
+    met: true
+    margin: "2.9x"
+  
+  decision: "Power is sufficient. Proceed with 2*B threshold."
+
+---
+# ANALYSIS PLAN (Locked)
+analysis:
+  pipeline_order:
+    1: "Signal sanity (AUC, distribution, shuffled AUC)"
+    2: "Lag analysis (cross-correlation at -60 to +60 seconds)"
+    3: "Calibration sweep (all T, k pairs; find selection via rule)"
+    4: "Held-out test evaluation (selected threshold + T=1.8%)"
+    5: "Chance check (shuffled labels, 1000 resamples)"
+  
+  run_once_only: true
+  no_data_peeking_before_freeze: true
+  no_retroactive_selection: true
+
+---
+# FALSE ALARM DEFINITIONS (Two versions, primary first)
+false_alarm_definitions:
+  primary:
+    name: "per_alert"
+    definition: |
+      Count each alert as one false alarm.
+      FA_count = number of alerts in calm periods (psi_some_avg10 == 0.0)
+      FA/hr = FA_count / calm_hours
+    rationale: "Operational metric: alerts to ops/hr"
+    used_for: "Pre-registered verdict"
+    locked: true
+  
+  exploratory:
+    name: "per_event"
+    definition: |
+      Aggregate alerts within each event (breach or false-positive event).
+      One event = one breach or one period of elevated signal.
+      per_event_FA = false-positive events / total events in calm periods
+      [Not used for official verdict; exploratory alternative only]
+    rationale: "Investigative: false alerts per distinct anomaly"
+    used_for: "Post-hoc analysis only (not official verdict)"
+    locked: false
+    caveat: "Can only be tested on new, held-out data if reconsidered"
+
+---
+# ALERT RULE (Locked)
+alert_rule:
+  definition: |
+    Alert fires when signal > T for k consecutive 20s bins.
+  parameters:
+    T_grid:
+      - 0.5
+      - 1.0
+      - 1.5
+      - 1.8
+      - 2.0
+      - 2.5
+      - 3.0
+      - 4.0
+      - 5.0
+      - 6.0
+      - 7.0
+      - 8.0
+      - 9.0
+    k_values:
+      - 1
+      - 3
+    cooldown_seconds: 60
+    cooldown_bins: 3
+  interpretation: |
+    Alert is generated per (T, k) pair on calibration data.
+    For each alert, record: timestamp, pod, threshold value.
+  locked_date: "2026-10-18"
+
+---
+# SELECTION RULE (Locked)
+selection_rule:
+  objective: "Maximize recall subject to FA/hr <= 2.0"
+  constraint_fa_per_hour: 2.0
+  constraint_recall_minimum: 0.5
+  tie_breaking:
+    1: "Fewer false alarms"
+    2: "Higher threshold (prefer conservative)"
+  applied_on: "Calibration data only"
+  applied_before: "Test evaluation begins"
+  frozen_date: "2026-10-18"
+  output:
+    selected_T: "[computed during analysis]"
+    selected_k: "[computed during analysis]"
+    status_if_no_viable: "report no_viable_threshold and STOP"
+
+---
+# PASS CRITERIA (Locked)
+pass_criteria:
+  primary_threshold: "selected (T, k) from calibration sweep"
+  project_configured: "T=1.8%, k=1"
+  
+  test_for_selected:
+    wilson_ci_lower_bound_on_recall: ">= 0.60"
+    fa_upper_bound_per_hour: "<= 2.0"
+    both_must_pass: true
+    verdict_if_pass: "SUPPORTED"
+    verdict_if_fail: "NOT_SUPPORTED"
+  
+  test_for_project_configured:
+    wilson_ci_lower_bound_on_recall: ">= 0.60"
+    fa_upper_bound_per_hour: "<= 2.0"
+    both_must_pass: true
+    verdict_if_pass: "SUPPORTED (project threshold)"
+    verdict_if_fail: "NOT_SUPPORTED (project threshold)"
+  
+  wilson_ci_method: "normal approximation, 95% two-sided"
+  bootstrap_iterations: 2000
+  bootstrap_seed: 42
+  bootstrap_resampling_unit: "per-session (resampling whole sessions, not individual bins)"
+
+---
+# STOP RULES (Locked)
+stop_rules:
+  underpowered:
+    condition: "calibration_events < 15 OR test_events < 15 OR test_hours < 3.0"
+    action: "Stop. Report UNDERPOWERED. Do not proceed to verdict."
+    verdict: "UNDERPOWERED"
+  
+  no_viable_threshold:
+    condition: "No (T, k) satisfies recall >= 0.5 AND FA/hr <= 2.0 simultaneously"
+    action: "Stop. Report no_viable_threshold. Skip test evaluation."
+    verdict: "NO_VIABLE_THRESHOLD"
+  
+  test_fails:
+    condition: "Selected (T, k) fails pass criteria on test data"
+    action: "Report failure. Do not select new threshold from test data."
+    verdict: "NOT_SUPPORTED"
+
+---
+# DATA SPLITS (Locked)
+data_splits:
+  pilot:
+    file: "train.csv rows 0-59"
+    duration_hours: 0.33
+    purpose: "Power verification only (Test 2)"
+    disposition: "EXCLUDED from calibration and test"
+  
+  calibration:
+    files:
+      - "train.csv rows 60-20735"
+    duration_hours: 114.86
+    expected_events: "~173 (target >= 25)"
+    purpose: "Threshold sweep, selection rule application"
+    held_out_from_test: true
+  
+  test_held_out:
+    files:
+      - "test.csv"
+      - "validation.csv"
+    duration_hours: 28.8
+    expected_events: "~43 (target >= 15)"
+    purpose: "Final verdict (used exactly once)"
+    held_out_from_calibration: true
+  
+  split_assignment:
+    rule: "Frozen before any analysis"
+    deviation_allowed: false
+    reason: "No data peeking; honest pre-registration"
+
+---
+# SESSION ASSIGNMENTS (Locked)
+# NOTE: This pre-registration is on CSV data, not live sessions.
+# Session assignment plan is for methodology documentation.
+sessions:
+  plan: |
+    This pre-registration applies to analysis on static CSV data
+    (data/train.csv, data/test.csv, data/validation.csv).
+    
+    If a future experiment runs live sessions, the session assignment
+    below documents the principle:
+  
+  assignment_table:
+    - session_id: pilot
+      set: pilot
+      type: calm/stress mix
+      status: "excluded from analysis"
+    
+    - session_id: "cal_1 through cal_N"
+      set: calibration
+      type: stress
+      assignment_rule: "All odd-numbered calibration sessions go to CAL"
+    
+    - session_id: "test_1 through test_M"
+      set: test
+      type: stress
+      assignment_rule: "All even-numbered test sessions go to TEST"
+  
+  assignment_frozen_before: "First session runs"
+  no_data_peeking_during_collection: true
+
+---
+# DEVIATIONS FROM THIS PRE-REGISTRATION (Locked Recording)
+deviations:
+  permitted: false
+  reason: "All parameters frozen before analysis"
+  recording_protocol: |
+    If any deviation is discovered or necessary:
+    1. Document the deviation in DEVIATIONS.md
+    2. Record date, reason, impact on validity
+    3. Update verdict status to "DEVIATION" or rerun with modified rule
+  existing_deviations: []
+
+---
+# ANALYST DECLARATION (Locked)
+declaration:
+  analyst: "Kiro (automated)"
+  date_frozen: "2026-10-18"
+  timestamp: "2026-10-18T00:00:00Z"
+  
+  i_declare:
+    - "All rules above are frozen before any analysis begins"
+    - "No data peeking or retroactive rule changes will occur"
+    - "The selection rule will be applied mechanically on calibration data"
+    - "The test evaluation will use only the selected (T, k) and T=1.8%"
+    - "Results will be reported with pass/fail verdicts per the frozen criteria"
+    - "Any deviation will be documented transparently"
+  
+  signature_hash: "[to be signed]"
+  commitment: "This pre-registration is binding on the analysis."
+
+---
+# METADATA FOR REPRODUCIBILITY
+reproducibility:
+  code_version: "test_1_label_independence.py (Test 1)"
+  code_version_2: "test_2_pilot.py (Test 2)"
+  analysis_framework: "Python 3 + pandas + numpy + scipy"
+  random_seed_all: 42
+  
+  files_referenced:
+    - "data/train.csv"
+    - "data/test.csv"
+    - "data/validation.csv"
+    - "SIGNAL_LOCKED.md"
+    - "TEST_1_RESULT.md"
+    - "TEST_2_RESULT.md"
+    - "PREREG_FROZEN.yaml (this file)"
+  
+  checksums:
+    signal_definition_sha256: "61484120305457364fda4bcd50afa9f178c962b061fa810b5458a649078bacb0"
+    # Other file SHAs to be recorded upon signature
+
+---
+# NEXT STEPS
+next_steps:
+  1: "Archive this pre-registration (PREREG_FROZEN.yaml)"
+  2: "Run Test 3 (calibration sweep on calibration data)"
+  3: "Run Test 4 (held-out test on test data)"
+  4: "Run Test 5 (chance check and reproducibility)"
+  5: "Report verdicts in FINAL_VERDICT.md"
+  6: "No changes to rules or data selection permitted after this point"
+
+---
+status: "FROZEN AND SIGNED"

@@ -1,0 +1,58 @@
+{
+  "timestamp": "20261021_155223",
+  "data_file": "data/synthetic_p99_200ms_20261021_155129.csv",
+  "config": {
+    "delta_psi_threshold": 1.8,
+    "slo_threshold_ms": 200.0,
+    "sample_interval_seconds": 20,
+    "recall_min": 0.6,
+    "fa_rate_max": 2.0,
+    "precision_min": 0.5
+  },
+  "dataset_stats": {
+    "total_samples": 720,
+    "duration_hours": 4.0,
+    "psi_min": 0.0,
+    "psi_p50": 0.6889719999999999,
+    "psi_p95": 4.27984754,
+    "psi_max": 7.493713,
+    "delta_psi_min": -2.848054,
+    "delta_psi_p50": 0.0,
+    "delta_psi_p95": 0.37725081,
+    "delta_psi_max": 2.5107732,
+    "latency_p99_min": 10.0,
+    "latency_p99_p50": 53.006626,
+    "latency_p99_p95": 453.506667,
+    "latency_p99_max": 823.8893
+  },
+  "metrics": {
+    "total_breaches": 11,
+    "detected_breaches": 2,
+    "missed_breaches": 9,
+    "recall": 0.18181818181818182,
+    "num_alerts": 19,
+    "true_alerts": 10,
+    "false_alarms": 9,
+    "fa_rate": 2.25,
+    "precision": 0.5263157894736842,
+    "mean_lead_time_s": 100.0
+  },
+  "criteria": {
+    "recall": {
+      "requirement": 0.6,
+      "value": 0.18181818181818182,
+      "pass": false
+    },
+    "fa_rate": {
+      "requirement": 2.0,
+      "value": 2.25,
+      "pass": false
+    },
+    "precision": {
+      "requirement": 0.5,
+      "value": 0.5263157894736842,
+      "pass": true
+    }
+  },
+  "verdict": "NOT_SUPPORTED"
+}

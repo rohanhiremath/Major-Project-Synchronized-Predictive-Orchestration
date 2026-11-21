@@ -1,0 +1,17 @@
+{
+  "T_selected": 1.0,
+  "k_selected": 1,
+  "verdict": "UNDERPOWERED",
+  "recall": 0.7143,
+  "fa_per_hour": 0.0,
+  "wilson_95ci": [
+    0.4535,
+    0.8828
+  ],
+  "test_events": 14,
+  "test_hours": 2.333,
+  "T_1_8_verdict": "UNDERPOWERED",
+  "T_1_8_recall": 0.0714,
+  "T_1_8_fa_ph": 0.0,
+  "note": "T_selected is the threshold chosen by the pre-registered selection rule on calibration data. T=1.8 is the project-configured value evaluated once on test data. Both verdicts apply only to this workload and this host. Node-level PSI is affected by other processes on the host."
+}

@@ -1,0 +1,10 @@
+{
+  "observed_recall": 1.0,
+  "shuffled_recalls_mean": 0.1724431279620853,
+  "shuffled_recalls_std": 0.011967659630200285,
+  "count_beat_observed": 0,
+  "pct_beat_observed": 0.0,
+  "chance_check_decision": "PASS",
+  "per_series_mean": 0.17369668246445497,
+  "per_series_pct_beat": 0.0
+}

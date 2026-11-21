@@ -30,11 +30,18 @@ secrets.json
 # Logs
 *.log
 
-# Generated datasets
-#data/train.csv
-#data/validation.csv
-#data/test.csv
-#data/tft_predictions.csv
+# Generated datasets — too large for GitHub (>100 MB limit)
+data/tft_predictions.csv
+data/train.csv
+data/validation.csv
+data/test.csv
+data/synthetic/psi_7d_full.csv
+data/synthetic/train.csv
+data/synthetic/val.csv
+data/synthetic/test.csv
+results/exp1_split/train_safe.csv
+results/exp1_split/val_safe.csv
+results/exp1_split/test_safe.csv
 
 # Lightning / training logs
 lightning_logs/

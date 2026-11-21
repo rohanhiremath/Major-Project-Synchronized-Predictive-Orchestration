@@ -1,0 +1,52 @@
+{
+  "variants": [
+    {
+      "name": "baseline",
+      "memory_limit_mb": 256,
+      "working_set_pct": 0.7,
+      "allocation_per_request_kb": 512,
+      "injector_target_mb": 180,
+      "description": "Original configuration"
+    },
+    {
+      "name": "higher_working_set",
+      "memory_limit_mb": 256,
+      "working_set_pct": 0.85,
+      "allocation_per_request_kb": 512,
+      "injector_target_mb": 180,
+      "description": "Increase working set to 85%"
+    },
+    {
+      "name": "larger_allocation",
+      "memory_limit_mb": 256,
+      "working_set_pct": 0.7,
+      "allocation_per_request_kb": 1024,
+      "injector_target_mb": 180,
+      "description": "Double allocation per request"
+    },
+    {
+      "name": "stronger_injector",
+      "memory_limit_mb": 256,
+      "working_set_pct": 0.7,
+      "allocation_per_request_kb": 512,
+      "injector_target_mb": 220,
+      "description": "Increase injector to 220MB"
+    },
+    {
+      "name": "smaller_limit",
+      "memory_limit_mb": 192,
+      "working_set_pct": 0.7,
+      "allocation_per_request_kb": 512,
+      "injector_target_mb": 140,
+      "description": "Reduce limit to 192MB"
+    }
+  ],
+  "target_criteria": {
+    "min_latency_increase": 2.0,
+    "preferred_psi_range": [
+      1.5,
+      3.0
+    ],
+    "success_episodes": 3
+  }
+}

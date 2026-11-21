@@ -1,0 +1,9 @@
+{
+  "auc": 0.99983712099594,
+  "shuffled_auc_mean": 0.49979325992713436,
+  "shuffled_auc_std": 0.004747036179026182,
+  "decision": "PASS (with co-generation artifact detected)",
+  "calm_bins": 6650,
+  "stress_bins": 14026,
+  "breach_events": 4471
+}

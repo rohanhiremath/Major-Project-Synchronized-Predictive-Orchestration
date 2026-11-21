@@ -1,0 +1,79 @@
+{
+  "data_origin": "synthetic",
+  "seed": 42,
+  "step_seconds": 15,
+  "total_points_per_series": 40320,
+  "days": 7,
+  "nodes": [
+    "node-a",
+    "node-b",
+    "node-c"
+  ],
+  "split_info": {
+    "train_end_idx": 25920,
+    "val_start_idx": 26040,
+    "val_end_idx": 28800,
+    "test_start_idx": 28920,
+    "gap_size": 120,
+    "max_encoder_length": 96,
+    "max_prediction_length": 24
+  },
+  "column_roles": {
+    "target": "psi_io_some_avg10",
+    "group_ids": [
+      "node_id"
+    ],
+    "static_categoricals": [
+      "node_id",
+      "workload_type"
+    ],
+    "time_varying_known_reals": [
+      "hour_of_day",
+      "day_of_week",
+      "minute_sin",
+      "minute_cos",
+      "is_business_hours",
+      "is_maintenance_window"
+    ],
+    "time_varying_known_categoricals": [],
+    "time_varying_unknown_reals": [
+      "disk_iops",
+      "disk_queue_depth",
+      "io_wait_pct",
+      "cpu_util_pct",
+      "p95_latency_ms",
+      "psi_io_some_avg10",
+      "psi_io_some_avg60",
+      "psi_io_some_avg300",
+      "psi_io_full_avg10",
+      "psi_io_full_avg60",
+      "psi_io_full_avg300",
+      "psi_io_some_total_us"
+    ]
+  },
+  "spike_threshold": 1.8,
+  "split_stats": {
+    "train": {
+      "rows": 77763,
+      "spike_count": 5866,
+      "spike_pct": 7.54343325231794,
+      "spike_events": 1011
+    },
+    "val": {
+      "rows": 8283,
+      "spike_count": 643,
+      "spike_pct": 7.762887842569118,
+      "spike_events": 108
+    },
+    "test": {
+      "rows": 34200,
+      "spike_count": 2496,
+      "spike_pct": 7.298245614035087,
+      "spike_events": 430
+    }
+  },
+  "naive_baseline": {
+    "recall": 1.0,
+    "precision": 0.7332549941245593
+  }
+}

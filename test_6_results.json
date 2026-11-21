@@ -1,0 +1,34 @@
+{
+  "selected": {
+    "T": 0.5,
+    "k": 1,
+    "tp": 844,
+    "fa_total": 0,
+    "fa_per_hour": 0.0,
+    "fa_ci_lower": 0,
+    "fa_ci_upper": 0.0,
+    "recall": 1.0,
+    "recall_ci_lower": 0.9954689649576053,
+    "recall_ci_upper": 0.9999999999999999,
+    "precision": 0.9472502805836139,
+    "criterion_1_recall": "True",
+    "criterion_2_fa": "True",
+    "verdict": "SUPPORTED"
+  },
+  "project_configured": {
+    "T": 1.8,
+    "k": 1,
+    "tp": 704,
+    "fa_total": 0,
+    "fa_per_hour": 0.0,
+    "fa_ci_lower": 0,
+    "fa_ci_upper": 0.0,
+    "recall": 0.8341232227488151,
+    "recall_ci_lower": 0.807525169265008,
+    "recall_ci_upper": 0.8576934281711167,
+    "precision": 1.0,
+    "criterion_1_recall": "True",
+    "criterion_2_fa": "True",
+    "verdict": "SUPPORTED"
+  }
+}

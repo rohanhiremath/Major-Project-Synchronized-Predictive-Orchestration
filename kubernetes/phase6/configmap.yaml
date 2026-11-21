@@ -7,6 +7,13 @@ metadata:
     app: prediction-service
 data:
   # Model configuration
+  # SPIKE_THRESHOLD: project-chosen operating point, not empirically validated.
+  # Applied to: deriv(node_pressure_memory_waiting_seconds_total[2m]) * 100
+  #             (Prometheus rate-of-change, not cgroup avg10).
+  # Host experiment (experiments/psi_threshold_validation/verdict.json) tested
+  # cgroup avg10 only. At T=1.8% avg10: recall=0.07 (UNDERPOWERED).
+  # At T=1.0% avg10: recall=0.71 (UNDERPOWERED). Prometheus deriv not tested.
+  # Do not change until signal mismatch is resolved and deriv signal is validated.
   SPIKE_THRESHOLD: "1.80"
   MAX_ENCODER_LENGTH: "30"
   MAX_PREDICTION_LENGTH: "30"

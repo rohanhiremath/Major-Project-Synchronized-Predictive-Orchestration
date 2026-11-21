@@ -1,0 +1,45 @@
+{
+  "production_signal": {
+    "source": "kubernetes/phase6/prediction_service.py",
+    "query": "deriv(node_pressure_memory_waiting_seconds_total{pod=~\"workload-app-.*\"}[2m]) * 100",
+    "description": "Derivative of node_pressure_memory_waiting_seconds_total counter over 2-minute window, scaled to percentage",
+    "interpretation": "Rate of change of PSI memory waiting time (percent per second)",
+    "psi_type": "memory",
+    "psi_metric": "some",
+    "time_window": "avg10 equivalent (Prometheus rate over 2m approximates 10s average)",
+    "units": "percent",
+    "threshold_in_code": 1.8,
+    "notes": [
+      "This is a Prometheus query, not direct /proc/pressure/memory read",
+      "Uses deriv() to compute rate from counter",
+      "Multiplies by 100 to convert to percentage",
+      "Applied per pod (pod label selector)",
+      "Negative values are clamped to 0.0"
+    ]
+  },
+  "host_psi_direct": {
+    "source": "/proc/pressure/memory",
+    "format": "some avg10=X.XX avg60=X.XX avg300=X.XX total=XXXXXX",
+    "description": "Direct read from kernel PSI interface",
+    "psi_type": "memory",
+    "psi_metric": "some",
+    "time_windows": [
+      "avg10",
+      "avg60",
+      "avg300"
+    ],
+    "units": "percent",
+    "notes": [
+      "Available on host with kernel >= 4.20 and CONFIG_PSI=y",
+      "This experiment will use avg10 to match production's ~10s window",
+      "Does not require Prometheus"
+    ]
+  },
+  "experiment_signal": {
+    "chosen": "host_psi_direct",
+    "reason": "Experiment runs without full Prometheus stack; will read /proc/pressure/memory directly from pod cgroup",
+    "metric": "psi_memory_some_avg10",
+    "units": "percent",
+    "threshold_to_validate": 1.8
+  }
+}

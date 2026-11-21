@@ -16,19 +16,19 @@ from pytorch_forecasting.metrics import QuantileLoss
 # ============================================================
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-DATA_DIR = PROJECT_ROOT / "data"
+DATA_DIR = PROJECT_ROOT / "data" / "synthetic"
 MODEL_DIR = PROJECT_ROOT / "models"
 
 TRAIN_FILE = DATA_DIR / "train.csv"
-VAL_FILE = DATA_DIR / "validation.csv"
+VAL_FILE = DATA_DIR / "val.csv"
 TEST_FILE = DATA_DIR / "test.csv"
 
-MODEL_FILE = MODEL_DIR / "tft_psi_model.ckpt"
+MODEL_FILE = MODEL_DIR / "tft_psi_model_synthetic.ckpt"
 
-TARGET = "psi_some_avg10"
+TARGET = "psi_io_some_avg10"
 
-MAX_ENCODER_LENGTH = 30  # 10 minutes of 20-second history
-MAX_PREDICTION_LENGTH = 30  # 10-minute forecast horizon
+MAX_ENCODER_LENGTH = 96  # 24 minutes of 15-second history
+MAX_PREDICTION_LENGTH = 24  # 6-minute forecast horizon
 
 BATCH_SIZE = 16
 
@@ -79,6 +79,9 @@ print("=" * 60)
 print("Training rows:", len(train_df))
 print("Validation rows:", len(val_df))
 print("Test rows:", len(test_df))
+print("Train columns:", train_df.columns.tolist())
+print("Train dtypes:")
+print(train_df.dtypes)
 
 
 # ============================================================
@@ -93,36 +96,37 @@ training_dataset = TimeSeriesDataSet(
 
     target=TARGET,
 
-    group_ids=["series_id"],
+    group_ids=["node_id"],
 
     max_encoder_length=MAX_ENCODER_LENGTH,
 
     max_prediction_length=MAX_PREDICTION_LENGTH,
 
     time_varying_known_reals=[
-        "time_idx",
-        "hour_sin",
-        "hour_cos",
+        "hour_of_day",
+        "day_of_week",
+        "minute_sin",
+        "minute_cos",
+        "is_business_hours",
+        "is_maintenance_window",
     ],
 
     time_varying_unknown_reals=[
-        "request_rate",
-        "active_connections",
-        "cpu_usage",
-        "memory_usage",
-        "read_bytes_per_sec",
-        "write_bytes_per_sec",
-        "latency_ms",
-        "error_rate",
-
-        "psi_some_avg10",
-        "psi_some_avg60",
-        "psi_some_avg300",
-
-        "psi_full_avg10",
-        "psi_full_avg60",
-        "psi_full_avg300",
+        "disk_iops",
+        "disk_queue_depth",
+        "io_wait_pct",
+        "cpu_util_pct",
+        "p95_latency_ms",
+        "psi_io_some_avg10",
+        "psi_io_some_avg60",
+        "psi_io_some_avg300",
+        "psi_io_full_avg10",
+        "psi_io_full_avg60",
+        "psi_io_full_avg300",
+        "psi_io_some_total_us",
     ],
+    
+    allow_missing_timesteps=True,
 )
 
 
@@ -136,7 +140,7 @@ train_val_df = pd.concat(
 )
 
 train_val_df = train_val_df.sort_values(
-    ["series_id", "time_idx"]
+    ["node_id", "time_idx"]
 ).reset_index(drop=True)
 
 
@@ -145,6 +149,7 @@ validation_dataset = TimeSeriesDataSet.from_dataset(
     train_val_df,
     predict=True,
     stop_randomization=True,
+    allow_missing_timesteps=True,
 )
 
 

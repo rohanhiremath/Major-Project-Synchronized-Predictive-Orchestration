@@ -1,0 +1,181 @@
+{
+  "experiment": "ARIMA vs TFT comparison",
+  "protocol": {
+    "data": [
+      "data/train.csv",
+      "data/validation.csv",
+      "data/test.csv"
+    ],
+    "target": "psi_some_avg10",
+    "series": [
+      "node-a",
+      "node-b",
+      "node-c"
+    ],
+    "encoder_steps": 30,
+    "horizon_steps": 30,
+    "threshold_pct": 1.8,
+    "interval_s": 15,
+    "alert_rule": "alert if max(q90 over 30-step window) >= 1.8%",
+    "arima_forecast": "Fit once on train; for each test window apply full history and get_forecast(30). 90% PI upper bound used as q90."
+  },
+  "arima": {
+    "order": [
+      3,
+      0,
+      2
+    ],
+    "aic_node_a": 59338.87,
+    "params": 6,
+    "metrics": {
+      "tp": 4877,
+      "fp": 3029,
+      "fn": 41,
+      "tn": 26166,
+      "precision": 0.616873,
+      "recall": 0.991663,
+      "f1": 0.760605,
+      "fa_per_hour": 21.3104,
+      "mae": 0.054045,
+      "rmse": 0.136991,
+      "coverage": 0.863952,
+      "n_windows": 34113,
+      "n_positive": 4918,
+      "prevalence": 0.144168,
+      "series": "ALL",
+      "order": "(3, 0, 2)",
+      "params": 6,
+      "aic_node_a": 59338.87,
+      "inf_ms_per_window": 0.014
+    },
+    "bootstrap_ci": {
+      "precision": {
+        "mean": 0.617201,
+        "lo95": 0.572845,
+        "hi95": 0.662421
+      },
+      "recall": {
+        "mean": 0.991466,
+        "lo95": 0.982654,
+        "hi95": 0.996528
+      },
+      "f1": {
+        "mean": 0.760532,
+        "lo95": 0.725241,
+        "hi95": 0.794867
+      }
+    },
+    "per_series": {
+      "node-a": {
+        "tp": 1579,
+        "fp": 1003,
+        "fn": 6,
+        "tn": 8783,
+        "precision": 0.611541,
+        "recall": 0.996215,
+        "f1": 0.757859,
+        "fa_per_hour": 21.1696,
+        "mae": 0.058704,
+        "rmse": 0.14772,
+        "coverage": 0.866766,
+        "n_windows": 11371,
+        "n_positive": 1585,
+        "prevalence": 0.13939,
+        "series": "node-a",
+        "fit_s": 4.58,
+        "total_s": 5.0,
+        "inf_ms_per_window": 0.016,
+        "aic": 59338.87
+      },
+      "node-b": {
+        "tp": 1721,
+        "fp": 976,
+        "fn": 7,
+        "tn": 8667,
+        "precision": 0.638116,
+        "recall": 0.995949,
+        "f1": 0.777853,
+        "fa_per_hour": 20.5998,
+        "mae": 0.052465,
+        "rmse": 0.135112,
+        "coverage": 0.857796,
+        "n_windows": 11371,
+        "n_positive": 1728,
+        "prevalence": 0.151966,
+        "series": "node-b",
+        "fit_s": 23.96,
+        "total_s": 24.5,
+        "inf_ms_per_window": 0.014,
+        "aic": 59400.15
+      },
+      "node-c": {
+        "tp": 1577,
+        "fp": 1050,
+        "fn": 28,
+        "tn": 8716,
+        "precision": 0.600305,
+        "recall": 0.982555,
+        "f1": 0.745274,
+        "fa_per_hour": 22.1616,
+        "mae": 0.050967,
+        "rmse": 0.127369,
+        "coverage": 0.867294,
+        "n_windows": 11371,
+        "n_positive": 1605,
+        "prevalence": 0.141149,
+        "series": "node-c",
+        "fit_s": 34.22,
+        "total_s": 34.7,
+        "inf_ms_per_window": 0.013,
+        "aic": 58564.71
+      }
+    }
+  },
+  "tft": {
+    "checkpoint": "models/tft_psi_model.ckpt",
+    "encoder": 30,
+    "horizon": 30,
+    "quantiles": [
+      0.1,
+      0.5,
+      0.9
+    ],
+    "metrics": {
+      "tp": 5378,
+      "fp": 2231,
+      "fn": 1359,
+      "tn": 25139,
+      "precision": 0.706795,
+      "recall": 0.798278,
+      "f1": 0.749756,
+      "fa_per_hour": 15.6988,
+      "mae": 0.224245,
+      "rmse": 0.447185,
+      "coverage": 0.360688,
+      "n_windows": 34107,
+      "n_positive": 6737,
+      "prevalence": 0.197525,
+      "series": "ALL (test)",
+      "params": 29000,
+      "inf_ms_per_window": 5.2,
+      "order": "TFT(enc=30,pred=30,quantiles=[0.1,0.5,0.9])"
+    },
+    "bootstrap_ci": {
+      "precision": {
+        "mean": 0.706437,
+        "lo95": 0.652753,
+        "hi95": 0.760881
+      },
+      "recall": {
+        "mean": 0.797992,
+        "lo95": 0.756856,
+        "hi95": 0.837159
+      },
+      "f1": {
+        "mean": 0.749127,
+        "lo95": 0.709813,
+        "hi95": 0.786785
+      }
+    }
+  }
+}
