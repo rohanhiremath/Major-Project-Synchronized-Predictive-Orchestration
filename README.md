@@ -2,16 +2,6 @@
 
 **Predictive autoscaling for Kubernetes using PSI (Pressure Stall Information) metrics and Temporal Fusion Transformer (TFT) deep learning model.**
 
-## Project Status: Phase 5 Complete ✅
-
-**Model Performance on Real Kubernetes Data:**
-- ✅ **Precision: 92.0%** (optimized from 79.3%)
-- ✅ **Recall: 100.0%** (catches every spike)
-- ✅ **F1 Score: 95.8%**
-- ✅ **Validated on 385 real Kubernetes PSI samples**
-
-**Ready for:** Phase 6 - Production Deployment
-
 ---
 
 ## Overview
